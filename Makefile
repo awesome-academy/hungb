@@ -11,11 +11,11 @@ run: dev
 
 # Run without hot reload
 run-simple:
-	go run ./cmd/server
+	go run ./cmd/app
 
 # Build binary
 build:
-	CGO_ENABLED=0 go build -o bin/server ./cmd/server
+	CGO_ENABLED=0 go build -o bin/server ./cmd/app
 
 # Docker shortcuts
 up:
@@ -62,8 +62,15 @@ migrate:
 	go run ./cmd/app -migrate
 
 seed:
-	@echo "Seeding database..."
+	@echo "Seeding database locally..."
+	go run ./cmd/app -seed
+
+seed-docker:
+	@echo "Seeding database via Docker..."
 	docker compose exec app go run ./cmd/app -seed
+
+# Migrate + Seed (convenience)
+setup-db: migrate seed
 
 # Testing
 test:
