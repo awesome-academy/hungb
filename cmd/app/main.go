@@ -3,16 +3,18 @@ package main
 import (
 	"html/template"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"sun-booking-tours/internal/config"
+	"sun-booking-tours/internal/routes"
+
 	"github.com/gin-gonic/gin"
-	"github.com/nguyenhungb/sun-booking-tours/internal/config"
 )
 
 func main() {
+	//TODO: Set up structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
@@ -46,34 +48,8 @@ func main() {
 
 	r.Static("/static", "./static")
 
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
-	// Public Site Routes
-	public := r.Group("/")
-	{
-		public.GET("/", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "public/pages/home.html", gin.H{
-				"title": "Trang chủ",
-				"user":  nil,
-			})
-		})
-	}
-
-	// Admin Site Routes
-	admin := r.Group("/admin")
-	{
-		admin.GET("/", func(c *gin.Context) {
-			c.Redirect(http.StatusFound, "/admin/dashboard")
-		})
-		admin.GET("/dashboard", func(c *gin.Context) {
-			c.HTML(http.StatusOK, "admin/pages/dashboard.html", gin.H{
-				"title": "Dashboard",
-				"user":  nil,
-			})
-		})
-	}
+	// Setup all routes
+	routes.SetupRoutes(r)
 
 	// Start server
 	addr := ":" + cfg.Port
@@ -100,12 +76,10 @@ func loadTemplates(baseDir string) *template.Template {
 			return nil
 		}
 
-		// Get relative path from baseDir for template name
 		relPath, err := filepath.Rel(baseDir, path)
 		if err != nil {
 			return err
 		}
-		// Normalize to forward slashes for consistent template names
 		relPath = filepath.ToSlash(relPath)
 
 		data, err := os.ReadFile(path)
