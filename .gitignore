@@ -55,7 +55,8 @@ coverage.html
 
 erd.drawio
 
-.github
+.github/*
+!.github/pull_request_template.md
 sun-booking-tours.drawio
 tasks.md
 requiement.md

@@ -32,8 +32,17 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	tmpl := loadTemplates("templates")
-	r.SetHTMLTemplate(tmpl)
+	// In development, reload templates on each request for hot reload
+	// In production, load once at startup for performance
+	if cfg.GinMode == gin.DebugMode {
+		r.Use(func(c *gin.Context) {
+			r.SetHTMLTemplate(loadTemplates("templates"))
+			c.Next()
+		})
+	} else {
+		tmpl := loadTemplates("templates")
+		r.SetHTMLTemplate(tmpl)
+	}
 
 	r.Static("/static", "./static")
 

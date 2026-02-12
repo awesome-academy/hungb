@@ -1,9 +1,13 @@
-.PHONY: run build docker-up docker-down migrate seed test lint clean
+.PHONY: run build up down logs restart docker-up docker-down docker-build docker-logs migrate migrate-up migrate-down seed test lint clean
 
 # Run with hot reload (requires air: go install github.com/air-verse/air@latest)
-run:
+dev:
 	@echo "Starting server with hot reload..."
+	@echo "Install air if not available: go install github.com/air-verse/air@latest"
 	air
+
+# Alias for dev
+run: dev
 
 # Run without hot reload
 run-simple:
@@ -12,6 +16,24 @@ run-simple:
 # Build binary
 build:
 	CGO_ENABLED=0 go build -o bin/server ./cmd/server
+
+# Docker shortcuts
+up:
+	docker compose up -d
+
+# Start only database (for local development)
+db:
+	@echo "Starting database only..."
+	docker compose up -d db
+
+down:
+	docker compose down
+
+logs:
+	docker compose logs -f
+
+restart:
+	docker compose restart
 
 # Docker Compose
 docker-up:
@@ -26,12 +48,22 @@ docker-build:
 docker-logs:
 	docker compose logs -f
 
-# Database
+# Database migrations
+migrate-up:
+	@echo "Running database migrations..."
+	docker compose exec app go run ./cmd/app -migrate
+
+migrate-down:
+	@echo "Rolling back last migration..."
+	docker compose exec app go run ./cmd/app -migrate-down
+
 migrate:
-	go run ./cmd/server -migrate
+	@echo "Running migrations locally..."
+	go run ./cmd/app -migrate
 
 seed:
-	go run ./cmd/server -seed
+	@echo "Seeding database..."
+	docker compose exec app go run ./cmd/app -seed
 
 # Testing
 test:
