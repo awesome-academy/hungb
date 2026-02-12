@@ -1,0 +1,62 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+bin/
+/build/
+/dist/
+
+# Logs
+*.log
+logs/
+build-errors.log
+
+# Temporary files
+tmp/
+temp/
+
+# Air
+tmp/
+
+# Coverage
+coverage.html
+
+erd.drawio
+
+.github
+sun-booking-tours.drawio
+tasks.md
+requiement.md
+specs/
