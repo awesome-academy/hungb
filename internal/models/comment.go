@@ -16,8 +16,8 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// Relationships
-	User     User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Review   Review    `gorm:"foreignKey:ReviewID" json:"review,omitempty"`
+	User     *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Review   *Review   `gorm:"foreignKey:ReviewID" json:"review,omitempty"`
 	Parent   *Comment  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
 	Children []Comment `gorm:"foreignKey:ParentID" json:"children,omitempty"`
 }

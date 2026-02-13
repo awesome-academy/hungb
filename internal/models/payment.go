@@ -18,6 +18,6 @@ type Payment struct {
 	CreatedAt     time.Time  `json:"created_at"`
 
 	// Relationships
-	Booking     Booking      `gorm:"foreignKey:BookingID" json:"booking,omitempty"`
+	Booking     *Booking     `gorm:"foreignKey:BookingID" json:"booking,omitempty"`
 	BankAccount *BankAccount `gorm:"foreignKey:BankAccountID" json:"bank_account,omitempty"`
 }

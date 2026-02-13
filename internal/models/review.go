@@ -25,6 +25,6 @@ type Review struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relationships
-	User     User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User     *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Comments []Comment `gorm:"foreignKey:ReviewID" json:"comments,omitempty"`
 }

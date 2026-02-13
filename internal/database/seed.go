@@ -1,7 +1,9 @@
-package models
+package database
 
 import (
 	"log/slog"
+
+	"sun-booking-tours/internal/models"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -31,7 +33,7 @@ func seedAdminUser(db *gorm.DB) error {
 		return err
 	}
 
-	admin := User{
+	admin := models.User{
 		Email:    "admin@sunbooking.vn",
 		Password: string(hashedPassword),
 		FullName: "System Admin",
@@ -56,7 +58,7 @@ func seedAdminUser(db *gorm.DB) error {
 
 // seedCategories creates sample tour categories if not exist.
 func seedCategories(db *gorm.DB) error {
-	categories := []Category{
+	categories := []models.Category{
 		{Name: "Du lịch biển", Slug: "du-lich-bien", Description: "Các tour du lịch biển đảo"},
 		{Name: "Du lịch núi", Slug: "du-lich-nui", Description: "Các tour leo núi, trekking"},
 		{Name: "Du lịch văn hóa", Slug: "du-lich-van-hoa", Description: "Tham quan di tích lịch sử, văn hóa"},

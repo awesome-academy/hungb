@@ -17,5 +17,5 @@ type BankAccount struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 
 	// Relationships
-	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }

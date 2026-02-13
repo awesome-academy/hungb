@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"sun-booking-tours/internal/config"
-	"sun-booking-tours/internal/models"
+	"sun-booking-tours/internal/database"
 	"sun-booking-tours/internal/routes"
 
 	"github.com/gin-gonic/gin"
@@ -41,13 +41,13 @@ func main() {
 	// Handle CLI flags: migrate and/or seed, then exit
 	if *migrateFlag || *seedFlag {
 		if *migrateFlag {
-			if err := models.Migrate(db); err != nil {
+			if err := database.Migrate(db); err != nil {
 				slog.Error("migration failed", "error", err)
 				os.Exit(1)
 			}
 		}
 		if *seedFlag {
-			if err := models.Seed(db); err != nil {
+			if err := database.Seed(db); err != nil {
 				slog.Error("seeding failed", "error", err)
 				os.Exit(1)
 			}

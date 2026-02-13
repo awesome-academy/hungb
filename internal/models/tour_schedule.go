@@ -18,6 +18,6 @@ type TourSchedule struct {
 	CreatedAt      time.Time `json:"created_at"`
 
 	// Relationships
-	Tour     Tour      `gorm:"foreignKey:TourID" json:"tour,omitempty"`
+	Tour     *Tour     `gorm:"foreignKey:TourID" json:"tour,omitempty"`
 	Bookings []Booking `gorm:"foreignKey:ScheduleID" json:"bookings,omitempty"`
 }

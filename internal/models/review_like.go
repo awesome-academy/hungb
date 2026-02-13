@@ -12,6 +12,6 @@ type ReviewLike struct {
 	CreatedAt time.Time `json:"created_at"`
 
 	// Relationships
-	User   User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Review Review `gorm:"foreignKey:ReviewID" json:"review,omitempty"`
+	User   *User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Review *Review `gorm:"foreignKey:ReviewID" json:"review,omitempty"`
 }

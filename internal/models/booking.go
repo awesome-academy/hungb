@@ -19,8 +19,8 @@ type Booking struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 
 	// Relationships
-	User     User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Tour     Tour         `gorm:"foreignKey:TourID" json:"tour,omitempty"`
-	Schedule TourSchedule `gorm:"foreignKey:ScheduleID" json:"schedule,omitempty"`
-	Payments []Payment    `gorm:"foreignKey:BookingID" json:"payments,omitempty"`
+	User     *User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Tour     *Tour         `gorm:"foreignKey:TourID" json:"tour,omitempty"`
+	Schedule *TourSchedule `gorm:"foreignKey:ScheduleID" json:"schedule,omitempty"`
+	Payments []Payment     `gorm:"foreignKey:BookingID" json:"payments,omitempty"`
 }

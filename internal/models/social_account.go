@@ -14,5 +14,5 @@ type SocialAccount struct {
 	CreatedAt  time.Time `json:"created_at"`
 
 	// Relationships
-	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }

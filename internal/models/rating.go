@@ -17,6 +17,6 @@ type Rating struct {
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// Relationships
-	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Tour Tour `gorm:"foreignKey:TourID" json:"tour,omitempty"`
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Tour *Tour `gorm:"foreignKey:TourID" json:"tour,omitempty"`
 }
