@@ -10,6 +10,7 @@ import (
 
 	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/database"
+	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/routes"
 
 	"github.com/gin-gonic/gin"
@@ -75,8 +76,10 @@ func main() {
 
 	r.Static("/static", "./static")
 
-	// Setup all routes
-	routes.SetupRoutes(r)
+	middleware.SetupSession(r, cfg.SessionSecret)
+	r.Use(middleware.CSRFMiddleware(cfg.SessionSecret))
+
+	routes.SetupRoutes(r, db)
 
 	// Start server
 	addr := ":" + cfg.Port

@@ -145,7 +145,7 @@ make test
 # Format code
 make fmt
 
-# Tidy dependencies
+# Tidy dependencies∂
 make tidy
 ```
 
