@@ -12,6 +12,19 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Sentinel errors for Login — distinguishable by appErrors.Is.
+var (
+	ErrAdminMustUsePortal = appErrors.NewAppError(403, "admin must use admin portal")
+	ErrAccountBanned      = appErrors.NewAppError(403, "account banned")
+	ErrAccountInactive    = appErrors.NewAppError(403, "account inactive")
+)
+
+// LoginForm holds data submitted from the public login form.
+type LoginForm struct {
+	Email    string `form:"email"    binding:"required,email"`
+	Password string `form:"password" binding:"required"`
+}
+
 // RegisterForm holds data submitted from the public registration form.
 type RegisterForm struct {
 	FullName        string `form:"full_name"        binding:"required,min=2"`
@@ -26,6 +39,36 @@ type AuthService struct {
 
 func NewAuthService(userRepo *repository.UserRepository) *AuthService {
 	return &AuthService{userRepo: userRepo}
+}
+
+// Login verifies credentials and returns the authenticated user.
+// Returns ErrInvalidCredentials for wrong email/password, ErrAccountBanned,
+// ErrAccountInactive, or ErrAdminMustUsePortal for other rejection cases.
+func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User, error) {
+	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
+
+	user, err := s.userRepo.FindByEmail(ctx, form.Email)
+	if err != nil {
+		// Don't reveal whether the email exists
+		return nil, appErrors.ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
+		return nil, appErrors.ErrInvalidCredentials
+	}
+
+	switch user.Status {
+	case "banned":
+		return nil, ErrAccountBanned
+	case "inactive":
+		return nil, ErrAccountInactive
+	}
+
+	if user.Role == "admin" {
+		return nil, ErrAdminMustUsePortal
+	}
+
+	return user, nil
 }
 
 // Register validates form data, hashes the password, and creates a new user.

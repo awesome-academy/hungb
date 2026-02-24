@@ -33,6 +33,9 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
 		public.GET("/", homePage)
 		public.GET("/register", authHandler.RegisterForm)
 		public.POST("/register", authHandler.Register)
+		public.GET("/login", authHandler.LoginForm)
+		public.POST("/login", authHandler.Login)
+		public.GET("/logout", authHandler.Logout)
 	}
 
 	// Protected public routes (requires login)

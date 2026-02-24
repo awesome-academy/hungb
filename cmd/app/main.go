@@ -14,6 +14,7 @@ import (
 	"sun-booking-tours/internal/routes"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 )
 
 func main() {
@@ -70,12 +71,11 @@ func main() {
 	// In production, load once at startup for performance
 	if cfg.GinMode == gin.DebugMode {
 		r.Use(func(c *gin.Context) {
-			r.SetHTMLTemplate(loadTemplates("templates"))
+			r.HTMLRender = loadTemplates("templates")
 			c.Next()
 		})
 	} else {
-		tmpl := loadTemplates("templates")
-		r.SetHTMLTemplate(tmpl)
+		r.HTMLRender = loadTemplates("templates")
 	}
 
 	r.Static("/static", "./static")
@@ -94,46 +94,87 @@ func main() {
 	}
 }
 
-// loadTemplates recursively loads all .html template files and registers them
-// with paths relative to the base directory (e.g., "public/pages/home.html").
-func loadTemplates(baseDir string) *template.Template {
-	tmpl := template.New("")
+// multiRenderer holds one *template.Template set per page.
+// Each set contains all shared layouts/partials plus one page file,
+// so {{define "content"}} blocks never collide across pages.
+type multiRenderer struct {
+	sets map[string]*template.Template
+}
+
+func (mr *multiRenderer) Instance(name string, data any) render.Render {
+	t, ok := mr.sets[name]
+	if !ok {
+		slog.Warn("template not found", "name", name)
+		t = template.Must(template.New(name).Parse("template not found: " + name))
+	}
+	return render.HTML{Template: t, Name: name, Data: data}
+}
+
+// loadTemplates builds a multiRenderer.
+// Files outside of /pages/ (layouts, partials) are treated as shared and
+// included in every page's template set.
+func loadTemplates(baseDir string) render.HTMLRender {
+	var sharedFiles []string
+	var pageFiles []string
 
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".html") {
 			return err
 		}
-		if info.IsDir() {
-			return nil
+		rel, _ := filepath.Rel(baseDir, path)
+		rel = filepath.ToSlash(rel)
+		if strings.Contains(rel, "/pages/") {
+			pageFiles = append(pageFiles, path)
+		} else {
+			sharedFiles = append(sharedFiles, path)
 		}
-		if !strings.HasSuffix(path, ".html") {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(baseDir, path)
-		if err != nil {
-			return err
-		}
-		relPath = filepath.ToSlash(relPath)
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		_, err = tmpl.New(relPath).Parse(string(data))
-		if err != nil {
-			slog.Error("failed to parse template", "path", relPath, "error", err)
-			return err
-		}
-		slog.Debug("loaded template", "name", relPath)
 		return nil
 	})
-
 	if err != nil {
-		slog.Error("failed to load templates", "error", err)
+		slog.Error("failed to walk templates directory", "error", err)
 		os.Exit(1)
 	}
 
-	return tmpl
+	sets := make(map[string]*template.Template, len(pageFiles))
+
+	for _, pagePath := range pageFiles {
+		rel, _ := filepath.Rel(baseDir, pagePath)
+		rel = filepath.ToSlash(rel)
+
+		t := template.New("").Funcs(template.FuncMap{
+			// add shared FuncMap entries here if needed
+			"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+		})
+
+		// Parse shared files (layouts + partials) first
+		for _, sf := range sharedFiles {
+			sfRel, _ := filepath.Rel(baseDir, sf)
+			sfRel = filepath.ToSlash(sfRel)
+			data, err := os.ReadFile(sf)
+			if err != nil {
+				slog.Error("failed to read shared template", "path", sfRel, "error", err)
+				os.Exit(1)
+			}
+			if _, err = t.New(sfRel).Parse(string(data)); err != nil {
+				slog.Error("failed to parse shared template", "path", sfRel, "error", err)
+				os.Exit(1)
+			}
+		}
+
+		// Parse the page itself
+		data, err := os.ReadFile(pagePath)
+		if err != nil {
+			slog.Error("failed to read page template", "path", rel, "error", err)
+			os.Exit(1)
+		}
+		if _, err = t.New(rel).Parse(string(data)); err != nil {
+			slog.Error("failed to parse page template", "path", rel, "error", err)
+			os.Exit(1)
+		}
+
+		sets[rel] = t
+		slog.Debug("loaded page template", "name", rel)
+	}
+
+	return &multiRenderer{sets: sets}
 }
