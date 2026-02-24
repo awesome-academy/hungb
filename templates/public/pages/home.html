@@ -1,24 +1,120 @@
-{{template "public_base" .}} {{define "content"}}
-<div class="row">
-  <div class="col-12 text-center py-5">
-    <h1>SUN Booking Tours</h1>
-    <p class="lead text-muted">Đặt tour du lịch dễ dàng và nhanh chóng</p>
+{{template "public_base" .}}
+{{define "content"}}
+<!-- Hero Section -->
+<div class="p-5 mb-5 bg-primary bg-gradient text-white rounded-3">
+  <div class="container-fluid py-3">
+    <h1 class="display-5 fw-bold">
+      <i class="bi bi-sun-fill me-2 text-warning"></i>Khám phá Việt Nam cùng SUN *
+    </h1>
+    <p class="col-md-8 fs-4">
+      Hàng trăm tour du lịch hấp dẫn, giao diện dễ sử dụng, đặt tour trong vài giây.
+    </p>
+    <a href="/tours" class="btn btn-warning btn-lg fw-semibold mt-2">
+      <i class="bi bi-search me-1"></i>Xem tất cả tour
+    </a>
   </div>
 </div>
 
-<div class="row mb-5">
-  <div class="col-12">
-    <h3>Tour nổi bật</h3>
-    <hr />
-    <p class="text-muted">Chưa có tour nào. Quay lại sau nhé!</p>
+<!-- Featured Tours Section -->
+<section class="mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0">
+      <i class="bi bi-star-fill text-warning me-2"></i>Tour nổi bật
+    </h3>
+    <a href="/tours" class="btn btn-outline-primary btn-sm">Xem tất cả &rarr;</a>
   </div>
-</div>
+  <hr />
 
-<div class="row">
-  <div class="col-12">
-    <h3>Tour mới nhất</h3>
-    <hr />
-    <p class="text-muted">Chưa có tour nào. Quay lại sau nhé!</p>
+  {{if .featured_tours}}
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {{range .featured_tours}}
+    <div class="col">
+      <div class="card h-100 shadow-sm">
+        <img
+          src="{{.Thumbnail}}"
+          class="card-img-top"
+          alt="{{.Title}}"
+          style="height: 200px; object-fit: cover;"
+          onerror="this.src='/static/images/placeholder.svg'"
+        />
+        <div class="card-body">
+          <h5 class="card-title">
+            <a href="/tours/{{.Slug}}" class="text-decoration-none stretched-link text-dark">
+              {{.Title}}
+            </a>
+          </h5>
+          <p class="card-text text-muted small mb-2">
+            <i class="bi bi-geo-alt me-1"></i>{{.Location}}
+            <span class="ms-3">
+              <i class="bi bi-clock me-1"></i>{{.DurationDays}} ngày
+            </span>
+          </p>
+          <div class="d-flex justify-content-between align-items-center mt-auto">
+            <span class="fw-bold text-primary fs-5">
+              {{printf "%.0f" .Price}} &#8363;
+            </span>
+            <span class="text-warning small">
+              <i class="bi bi-star-fill"></i> {{printf "%.1f" .AvgRating}}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{end}}
   </div>
-</div>
+  {{else}}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+    <p>Chưa có tour nổi bật nào. Quay lại sau nhé!</p>
+    <a href="/tours" class="btn btn-outline-primary btn-sm">Xem tất cả tour</a>
+  </div>
+  {{end}}
+</section>
+
+<!-- New Tours Section -->
+<section class="mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0">
+      <i class="bi bi-lightning-fill text-primary me-2"></i>Tour mới nhất
+    </h3>
+    <a href="/tours?sort=newest" class="btn btn-outline-primary btn-sm">Xem tất cả &rarr;</a>
+  </div>
+  <hr />
+
+  {{if .new_tours}}
+  <div class="row row-cols-1 row-cols-md-4 g-4">
+    {{range .new_tours}}
+    <div class="col">
+      <div class="card h-100 shadow-sm">
+        <img
+          src="{{.Thumbnail}}"
+          class="card-img-top"
+          alt="{{.Title}}"
+          style="height: 180px; object-fit: cover;"
+          onerror="this.src='/static/images/placeholder.svg'"
+        />
+        <div class="card-body">
+          <h6 class="card-title">
+            <a href="/tours/{{.Slug}}" class="text-decoration-none stretched-link text-dark">
+              {{.Title}}
+            </a>
+          </h6>
+          <p class="card-text text-muted small mb-1">
+            <i class="bi bi-geo-alt me-1"></i>{{.Location}}
+          </p>
+          <p class="fw-semibold text-primary mb-0">
+            {{printf "%.0f" .Price}} &#8363;
+          </p>
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+    <p>Chưa có tour mới nào. Quay lại sau nhé!</p>
+  </div>
+  {{end}}
+</section>
 {{end}}
