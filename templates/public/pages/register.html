@@ -1,0 +1,90 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4">Đăng ký tài khoản</h2>
+
+          {{template "_form_errors" .}}
+
+          <form method="POST" action="/register" novalidate>
+            <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+            {{/* Họ và tên */}}
+            <div class="mb-3">
+              <label for="full_name" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="full_name"
+                name="full_name"
+                class="form-control"
+                placeholder="Nguyễn Văn A"
+                value="{{if .form}}{{.form.FullName}}{{end}}"
+                required
+                minlength="2"
+              />
+            </div>
+
+            {{/* Email */}}
+            <div class="mb-3">
+              <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-control"
+                placeholder="example@email.com"
+                value="{{if .form}}{{.form.Email}}{{end}}"
+                required
+              />
+            </div>
+
+            {{/* Mật khẩu */}}
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                class="form-control"
+                placeholder="Ít nhất 8 ký tự"
+                required
+                minlength="8"
+              />
+            </div>
+
+            {{/* Xác nhận mật khẩu */}}
+            <div class="mb-4">
+              <label for="password_confirm" class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+              <input
+                type="password"
+                id="password_confirm"
+                name="password_confirm"
+                class="form-control"
+                placeholder="Nhập lại mật khẩu"
+                required
+              />
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg">Đăng ký</button>
+            </div>
+          </form>
+
+          <hr class="my-4" />
+
+          <p class="text-center mb-0">
+            Đã có tài khoản?
+            <a href="/login" class="fw-semibold">Đăng nhập</a>
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}
