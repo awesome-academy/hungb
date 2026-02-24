@@ -1,0 +1,53 @@
+{{define "_admin_sidebar"}}
+<nav class="col-md-2 d-none d-md-block sidebar py-3 px-0">
+  <!-- Brand -->
+  <div class="px-3 mb-4 pb-3 border-bottom border-secondary">
+    <a href="/admin/dashboard" class="text-white text-decoration-none d-flex align-items-center gap-2">
+        <img
+          alt="SUN * Booking Tours Logo"
+          style="height: 40px; object-fit: contain;"
+          src="/static/images/logo-sun.png"
+        />
+    </a>
+  </div>
+
+  <!-- Navigation -->
+  <ul class="nav flex-column px-2">
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "dashboard"}}active{{end}}" href="/admin/dashboard">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "users"}}active{{end}}" href="/admin/users">
+        <i class="bi bi-people"></i> Người dùng
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "tours"}}active{{end}}" href="/admin/tours">
+        <i class="bi bi-map"></i> Tour
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "categories"}}active{{end}}" href="/admin/categories">
+        <i class="bi bi-tags"></i> Danh mục
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "bookings"}}active{{end}}" href="/admin/bookings">
+        <i class="bi bi-calendar-check"></i> Đặt tour
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "reviews"}}active{{end}}" href="/admin/reviews">
+        <i class="bi bi-star"></i> Đánh giá
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {{if eq .active_menu "revenue"}}active{{end}}" href="/admin/revenue">
+        <i class="bi bi-graph-up"></i> Doanh thu
+      </a>
+    </li>
+  </ul>
+</nav>
+{{end}}

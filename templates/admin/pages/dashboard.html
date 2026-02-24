@@ -1,87 +1,141 @@
-{{template "admin_base" .}} {{define "content"}}
+{{template "admin_base" .}}
+{{define "content"}}
 <!-- Stats Cards -->
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card text-bg-primary">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="card-title">Người dùng</h6>
-            <h3>0</h3>
-          </div>
-          <div class="fs-1 opacity-50">
-            <i class="bi bi-people"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-bg-success">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="card-title">Tour</h6>
-            <h3>0</h3>
-          </div>
-          <div class="fs-1 opacity-50">
-            <i class="bi bi-map"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-bg-warning">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="card-title">Đặt tour hôm nay</h6>
-            <h3>0</h3>
-          </div>
-          <div class="fs-1 opacity-50">
-            <i class="bi bi-calendar-check"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-bg-info">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <div>
-            <h6 class="card-title">Doanh thu tháng</h6>
-            <h3>0 ₫</h3>
-          </div>
-          <div class="fs-1 opacity-50">
-            <i class="bi bi-graph-up"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="row row-cols-1 row-cols-md-4 g-4 mb-5">
+  {{range .stats_cards}}
+  {{template "_stats_card" .}}
+  {{end}}
 </div>
 
-<!-- Recent Bookings -->
-<div class="row">
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="card-title mb-0">Booking mới nhất</h5>
+<!-- Recent Data Tables -->
+<div class="row g-4">
+  <!-- Recent Bookings -->
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold">
+          <i class="bi bi-calendar-check me-2 text-primary"></i>Booking mới nhất
+        </h6>
+        <a href="/admin/bookings" class="btn btn-outline-primary btn-sm">Xem tất cả</a>
       </div>
-      <div class="card-body">
-        <p class="text-muted">Chưa có booking nào.</p>
+      <div class="card-body p-0">
+        {{if .recent_bookings}}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Khách hàng</th>
+                <th>Tour</th>
+                <th>Trạng thái</th>
+                <th>Ngày đặt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .recent_bookings}}
+              <tr>
+                <td class="ps-3 text-muted small">{{.ID}}</td>
+                <td>
+                  {{if .User}}
+                  <span class="fw-medium">{{.User.FullName}}</span>
+                  <small class="d-block text-muted">{{.User.Email}}</small>
+                  {{else}}
+                  <span class="text-muted">N/A</span>
+                  {{end}}
+                </td>
+                <td>
+                  {{if .Tour}}
+                  <span class="small">{{.Tour.Title}}</span>
+                  {{else}}
+                  <span class="text-muted">N/A</span>
+                  {{end}}
+                </td>
+                <td>
+                  {{if eq .Status "pending"}}
+                  <span class="badge bg-warning text-dark">Chờ xử lý</span>
+                  {{else if eq .Status "confirmed"}}
+                  <span class="badge bg-info">Đã xác nhận</span>
+                  {{else if eq .Status "completed"}}
+                  <span class="badge bg-success">Hoàn thành</span>
+                  {{else if eq .Status "cancelled"}}
+                  <span class="badge bg-danger">Đã hủy</span>
+                  {{else}}
+                  <span class="badge bg-secondary">{{.Status}}</span>
+                  {{end}}
+                </td>
+                <td class="small text-muted">{{.CreatedAt.Format "02/01/2006"}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+          Chưa có booking nào.
+        </div>
+        {{end}}
       </div>
     </div>
   </div>
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="card-title mb-0">Review chờ duyệt</h5>
+
+  <!-- Pending Reviews -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold">
+          <i class="bi bi-star me-2 text-warning"></i>Review chờ duyệt
+        </h6>
+        <a href="/admin/reviews" class="btn btn-outline-warning btn-sm">
+          Xem tất cả
+        </a>
       </div>
-      <div class="card-body">
-        <p class="text-muted">Chưa có review nào chờ duyệt.</p>
+      <div class="card-body p-0">
+        {{if .pending_reviews}}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Tiêu đề</th>
+                <th>Loại</th>
+                <th>Tác giả</th>
+                <th>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .pending_reviews}}
+              <tr>
+                <td class="ps-3">
+                  <a href="/admin/reviews/{{.ID}}" class="text-decoration-none text-dark small">
+                    {{.Title}}
+                  </a>
+                </td>
+                <td>
+                  {{if eq .Type "place"}}
+                  <span class="badge bg-primary">Địa điểm</span>
+                  {{else if eq .Type "food"}}
+                  <span class="badge bg-success">Ẩm thực</span>
+                  {{else if eq .Type "news"}}
+                  <span class="badge bg-info">Tin tức</span>
+                  {{else}}
+                  <span class="badge bg-secondary">{{.Type}}</span>
+                  {{end}}
+                </td>
+                <td class="small">
+                  {{if .User}}{{.User.FullName}}{{else}}N/A{{end}}
+                </td>
+                <td class="small text-muted">{{.CreatedAt.Format "02/01"}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-check-all fs-2 d-block mb-2"></i>
+          Không có review nào chờ duyệt.
+        </div>
+        {{end}}
       </div>
     </div>
   </div>
