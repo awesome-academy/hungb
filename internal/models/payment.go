@@ -12,7 +12,7 @@ type Payment struct {
 	BankAccountID *uint      `gorm:"index" json:"bank_account_id"`
 	Amount        float64    `gorm:"type:decimal(15,2);not null" json:"amount"`
 	PaymentMethod string     `gorm:"size:50" json:"payment_method"`
-	TransactionID string     `gorm:"size:255" json:"transaction_id"`
+	TransactionID string     `gorm:"size:255;uniqueIndex" json:"transaction_id"`
 	Status        string     `gorm:"size:20;default:'pending';not null" json:"status"`
 	PaidAt        *time.Time `json:"paid_at"`
 	CreatedAt     time.Time  `json:"created_at"`

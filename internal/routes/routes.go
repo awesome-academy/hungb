@@ -3,57 +3,56 @@ package routes
 import (
 	"net/http"
 
+	"sun-booking-tours/internal/middleware"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine) {
-	// Health check endpoint (no auth required)
+func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 	router.GET("/health", healthCheck)
 
-	// Public Site Routes
-	setupPublicRoutes(router)
+	router.Use(middleware.LoadUser(db))
 
-	// Admin Site Routes
+	setupPublicRoutes(router)
 	setupAdminRoutes(router)
 }
 
-// setupPublicRoutes configures routes for the public site (guest + authenticated users)
 func setupPublicRoutes(router *gin.Engine) {
 	public := router.Group("/")
 	{
-		// Home page
 		public.GET("/", homePage)
-
 	}
-	// TODO: Add middleware
+
+	// Protected public routes (requires login)
+	auth := public.Group("/", middleware.RequireLogin())
+	{
+		_ = auth // TODO: add protected public routes (profile, bookings, etc.)
+	}
 }
 
 func setupAdminRoutes(router *gin.Engine) {
 	admin := router.Group("/admin")
 	{
-		// Redirect /admin to /admin/dashboard
 		admin.GET("/", redirectToDashboard)
-
+		// TODO: admin login routes (no auth required)
 	}
 
-	// TODO: Add middleware
-	adminAuth := admin.Group("/")
+	adminAuth := admin.Group("/", middleware.RequireAdmin())
 	{
-		// Dashboard
 		adminAuth.GET("/dashboard", dashboardPage)
-
 	}
 }
 
-// TODO: Implement handlers
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func homePage(c *gin.Context) {
 	c.HTML(http.StatusOK, "public/pages/home.html", gin.H{
-		"title": "Trang chủ",
-		"user":  nil,
+		"title":      "Trang chủ",
+		"user":       middleware.GetCurrentUser(c),
+		"csrf_token": middleware.CSRFToken(c),
 	})
 }
 
@@ -63,7 +62,9 @@ func redirectToDashboard(c *gin.Context) {
 
 func dashboardPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin/pages/dashboard.html", gin.H{
-		"title": "Dashboard",
-		"user":  nil,
+		"title":       "Dashboard",
+		"active_menu": "dashboard",
+		"user":        middleware.GetCurrentUser(c),
+		"csrf_token":  middleware.CSRFToken(c),
 	})
 }
