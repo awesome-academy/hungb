@@ -14,7 +14,7 @@ type TourSchedule struct {
 	ReturnDate     time.Time `gorm:"not null" json:"return_date"`
 	AvailableSlots int       `gorm:"not null" json:"available_slots"`
 	PriceOverride  *float64  `gorm:"type:decimal(15,2)" json:"price_override"`
-	Status         string    `gorm:"size:20;default:open;not null" json:"status"`
+	Status         string    `gorm:"size:20;default:'open';not null" json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
 
 	// Relationships

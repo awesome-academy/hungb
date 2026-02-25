@@ -17,7 +17,7 @@ type Review struct {
 	Title     string         `gorm:"size:500;not null" json:"title"`
 	Content   string         `gorm:"type:text;not null" json:"content"`
 	Type      string         `gorm:"size:20;not null" json:"type"`
-	Status    string         `gorm:"size:20;default:pending;not null" json:"status"`
+	Status    string         `gorm:"size:20;default:'pending';not null" json:"status"`
 	LikeCount int            `gorm:"default:0" json:"like_count"`
 	Images    datatypes.JSON `gorm:"type:json" json:"images"`
 	CreatedAt time.Time      `json:"created_at"`

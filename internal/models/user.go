@@ -16,8 +16,8 @@ type User struct {
 	FullName  string         `gorm:"size:255;not null" json:"full_name"`
 	Phone     string         `gorm:"size:20" json:"phone"`
 	AvatarURL string         `gorm:"size:500" json:"avatar_url"`
-	Role      string         `gorm:"size:20;default:user;not null" json:"role"`
-	Status    string         `gorm:"size:20;default:active;not null" json:"status"`
+	Role      string         `gorm:"size:20;default:'user';not null" json:"role"`
+	Status    string         `gorm:"size:20;default:'active';not null" json:"status"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`

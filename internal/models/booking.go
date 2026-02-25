@@ -13,7 +13,7 @@ type Booking struct {
 	ScheduleID      uint      `gorm:"not null;index" json:"schedule_id"`
 	NumParticipants int       `gorm:"not null" json:"num_participants"`
 	TotalPrice      float64   `gorm:"type:decimal(15,2);not null" json:"total_price"`
-	Status          string    `gorm:"size:20;default:pending;not null" json:"status"`
+	Status          string    `gorm:"size:20;default:'pending';not null" json:"status"`
 	Note            string    `gorm:"type:text" json:"note"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`

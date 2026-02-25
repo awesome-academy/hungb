@@ -1,17 +1,25 @@
 package database
 
 import (
+	"errors"
 	"log/slog"
+	"os"
 
 	"sun-booking-tours/internal/models"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 // Seed inserts initial data into the database.
-// Uses FirstOrCreate to avoid duplicates on repeated runs.
+// Only runs in debug mode to prevent accidental seeding in production.
 func Seed(db *gorm.DB) error {
+	if gin.Mode() != gin.DebugMode {
+		slog.Warn("database seeding skipped: only runs in debug mode")
+		return nil
+	}
+
 	slog.Info("seeding database...")
 
 	if err := seedAdminUser(db); err != nil {
@@ -27,32 +35,42 @@ func Seed(db *gorm.DB) error {
 }
 
 // seedAdminUser creates the default admin user if not exists.
+// Requires ADMIN_EMAIL and ADMIN_PASSWORD environment variables.
 func seedAdminUser(db *gorm.DB) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+
+	if adminEmail == "" || adminPassword == "" {
+		return errors.New("ADMIN_EMAIL and ADMIN_PASSWORD must be set for seeding")
+	}
+
+	// Check if admin already exists
+	var existingAdmin models.User
+	if err := db.Where("email = ?", adminEmail).First(&existingAdmin).Error; err == nil {
+		slog.Info("admin user already exists", "email", adminEmail)
+		return nil
+	}
+
+	// Hash password only if needed
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
 	admin := models.User{
-		Email:    "admin@sunbooking.vn",
+		Email:    adminEmail,
 		Password: string(hashedPassword),
 		FullName: "System Admin",
 		Role:     "admin",
 		Status:   "active",
 	}
 
-	result := db.Where("email = ?", admin.Email).FirstOrCreate(&admin)
-	if result.Error != nil {
-		slog.Error("failed to seed admin user", "error", result.Error)
-		return result.Error
+	if err := db.Create(&admin).Error; err != nil {
+		slog.Error("failed to seed admin user", "error", err)
+		return err
 	}
 
-	if result.RowsAffected > 0 {
-		slog.Info("admin user created", "email", admin.Email)
-	} else {
-		slog.Info("admin user already exists", "email", admin.Email)
-	}
-
+	slog.Info("admin user created", "email", admin.Email)
 	return nil
 }
 

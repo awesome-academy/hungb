@@ -9,8 +9,8 @@ import (
 type SocialAccount struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
 	UserID     uint      `gorm:"not null;index" json:"user_id"`
-	Provider   string    `gorm:"size:50;not null" json:"provider"`
-	ProviderID string    `gorm:"size:255;not null" json:"provider_id"`
+	Provider   string    `gorm:"size:50;not null;uniqueIndex:idx_provider_account" json:"provider"`
+	ProviderID string    `gorm:"size:255;not null;uniqueIndex:idx_provider_account" json:"provider_id"`
 	CreatedAt  time.Time `json:"created_at"`
 
 	// Relationships

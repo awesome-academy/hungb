@@ -20,8 +20,8 @@ type Tour struct {
 	Location        string         `gorm:"size:500" json:"location"`
 	MaxParticipants int            `gorm:"not null" json:"max_participants"`
 	Images          datatypes.JSON `gorm:"type:json" json:"images"`
-	Status          string         `gorm:"size:20;default:draft;not null" json:"status"`
-	AvgRating       float64        `gorm:"type:decimal(3,2);default:0" json:"avg_rating"`
+	Status          string         `gorm:"size:20;default:'draft';not null" json:"status"`
+	AvgRating       float64        `gorm:"type:decimal(3,2);default:0;check:avg_rating >= 0 AND avg_rating <= 5" json:"avg_rating"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
