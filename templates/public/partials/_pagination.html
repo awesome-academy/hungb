@@ -12,7 +12,6 @@
 -->
 <nav aria-label="Phân trang" class="mt-4">
   <ul class="pagination justify-content-center flex-wrap">
-    <!-- Nút Trước -->
     <li class="page-item {{if le $p.Page 1}}disabled{{end}}">
       <a
         class="page-link"
@@ -23,22 +22,31 @@
       </a>
     </li>
 
-    <!-- Số trang (Pages slice provided by handler) -->
     {{range $p.Pages}}
     <li class="page-item {{if eq . $p.Page}}active{{end}}" {{if eq . $p.Page}}aria-current="page"{{end}}>
       <a class="page-link" href="?page={{.}}">{{.}}</a>
     </li>
     {{end}}
 
-    <!-- Nút Sau -->
     <li class="page-item {{if ge $p.Page $p.TotalPages}}disabled{{end}}">
-      <a
-        class="page-link"
-        href="?page={{$p.NextPage}}"
-        aria-label="Trang sau"
-      >
-        <span aria-hidden="true">&raquo;</span>
-      </a>
+      {{if ge $p.Page $p.TotalPages}}
+        <span
+          class="page-link"
+          aria-label="Trang sau"
+          aria-disabled="true"
+          tabindex="-1"
+        >
+          <span aria-hidden="true">&raquo;</span>
+        </span>
+      {{else}}
+        <a
+          class="page-link"
+          href="?page={{$p.NextPage}}"
+          aria-label="Trang sau"
+        >
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      {{end}}
     </li>
   </ul>
   <p class="text-center text-muted small">

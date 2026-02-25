@@ -125,7 +125,9 @@ func RespondAppError(c *gin.Context, err error) {
 // RespondPageError renders an HTML error page (for SSR).
 func RespondPageError(c *gin.Context, status int, templateName string, message string) {
 	c.HTML(status, templateName, gin.H{
-		"error": message,
+		"status":  status,
+		"message": message,
+		"error":   message,
 	})
 }
 
