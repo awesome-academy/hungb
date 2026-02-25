@@ -37,7 +37,11 @@ func main() {
 	)
 
 	// Connect to database
-	db := config.ConnectDB(cfg)
+	db, err := config.ConnectDB(cfg)
+	if err != nil {
+		slog.Error("database connection failed", "error", err)
+		os.Exit(1)
+	}
 
 	// Handle CLI flags: migrate and/or seed, then exit
 	if *migrateFlag || *seedFlag {

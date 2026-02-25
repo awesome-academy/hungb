@@ -14,6 +14,7 @@ func SetupSession(r *gin.Engine, secret string) {
 		Path:     "/",
 		MaxAge:   86400 * 7, // 7 days
 		HttpOnly: true,
+		Secure:   gin.Mode() == gin.ReleaseMode,
 	})
 	r.Use(sessions.Sessions(sessionName, store))
 }
