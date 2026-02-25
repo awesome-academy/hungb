@@ -1,4 +1,4 @@
-# SUN Booking Tours
+# SUN * Booking Tours
 
 A tour booking web application with separate public and admin interfaces, built with Go and server-side rendering.
 

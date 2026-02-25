@@ -1,0 +1,58 @@
+{{define "_pagination"}}
+{{if .pagination}}
+{{$p := .pagination}}
+{{if gt $p.TotalPages 1}}
+<!--
+  Expects pagination struct with fields:
+    Page       int    — current page (1-based)
+    TotalPages int    — total number of pages
+    Pages      []int  — slice of page numbers to render [1, 2, 3, ...]
+    PrevPage   int    — Page - 1 (pre-computed by handler)
+    NextPage   int    — Page + 1 (pre-computed by handler)
+-->
+<nav aria-label="Phân trang" class="mt-4">
+  <ul class="pagination justify-content-center flex-wrap">
+    <li class="page-item {{if le $p.Page 1}}disabled{{end}}">
+      <a
+        class="page-link"
+        href="?page={{$p.PrevPage}}"
+        aria-label="Trang trước"
+      >
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+
+    {{range $p.Pages}}
+    <li class="page-item {{if eq . $p.Page}}active{{end}}" {{if eq . $p.Page}}aria-current="page"{{end}}>
+      <a class="page-link" href="?page={{.}}">{{.}}</a>
+    </li>
+    {{end}}
+
+    <li class="page-item {{if ge $p.Page $p.TotalPages}}disabled{{end}}">
+      {{if ge $p.Page $p.TotalPages}}
+        <span
+          class="page-link"
+          aria-label="Trang sau"
+          aria-disabled="true"
+          tabindex="-1"
+        >
+          <span aria-hidden="true">&raquo;</span>
+        </span>
+      {{else}}
+        <a
+          class="page-link"
+          href="?page={{$p.NextPage}}"
+          aria-label="Trang sau"
+        >
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      {{end}}
+    </li>
+  </ul>
+  <p class="text-center text-muted small">
+    Trang {{$p.Page}} / {{$p.TotalPages}}
+  </p>
+</nav>
+{{end}}
+{{end}}
+{{end}}

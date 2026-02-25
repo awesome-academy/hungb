@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="600" height="400" fill="#e9ecef"/>
+  <rect x="200" y="120" width="200" height="160" rx="8" fill="#adb5bd"/>
+  <text x="300" y="210" font-family="sans-serif" font-size="18" fill="#6c757d" text-anchor="middle" dominant-baseline="middle">Ảnh tour</text>
+  <circle cx="260" cy="175" r="20" fill="#ced4da"/>
+  <path d="M220 230 Q260 190 300 215 Q340 240 380 200 L380 255 L220 255 Z" fill="#ced4da"/>
+</svg>

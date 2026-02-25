@@ -1,0 +1,14 @@
+{{define "_flash"}}
+{{if .flash_success}}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <i class="bi bi-check-circle-fill me-2"></i>{{.flash_success}}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+</div>
+{{end}}
+{{if .flash_error}}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>{{.flash_error}}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+</div>
+{{end}}
+{{end}}
