@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"html/template"
 	"log/slog"
 	"os"
@@ -8,12 +9,18 @@ import (
 	"strings"
 
 	"sun-booking-tours/internal/config"
+	"sun-booking-tours/internal/database"
 	"sun-booking-tours/internal/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// CLI flags for database operations
+	migrateFlag := flag.Bool("migrate", false, "Run database migration")
+	seedFlag := flag.Bool("seed", false, "Seed database with initial data")
+	flag.Parse()
+
 	//TODO: Set up structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -27,6 +34,30 @@ func main() {
 		"db_host", cfg.DBHost,
 		"db_name", cfg.DBName,
 	)
+
+	// Connect to database
+	db, err := config.ConnectDB(cfg)
+	if err != nil {
+		slog.Error("database connection failed", "error", err)
+		os.Exit(1)
+	}
+
+	// Handle CLI flags: migrate and/or seed, then exit
+	if *migrateFlag || *seedFlag {
+		if *migrateFlag {
+			if err := database.Migrate(db); err != nil {
+				slog.Error("migration failed", "error", err)
+				os.Exit(1)
+			}
+		}
+		if *seedFlag {
+			if err := database.Seed(db); err != nil {
+				slog.Error("seeding failed", "error", err)
+				os.Exit(1)
+			}
+		}
+		os.Exit(0)
+	}
 
 	gin.SetMode(cfg.GinMode)
 
