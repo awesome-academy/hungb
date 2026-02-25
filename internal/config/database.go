@@ -11,11 +11,10 @@ import (
 )
 
 // ConnectDB opens a PostgreSQL connection using GORM with connection pool settings.
-// Returns the *gorm.DB instance or exits on failure.
-func ConnectDB(cfg *Config) *gorm.DB {
+// Returns the *gorm.DB instance or an error if connection fails.
+func ConnectDB(cfg *Config) (*gorm.DB, error) {
 	dsn := cfg.DSN()
 
-	// Configure GORM logger level based on gin mode
 	var logLevel logger.LogLevel
 	if cfg.GinMode == "debug" {
 		logLevel = logger.Info
@@ -27,15 +26,12 @@ func ConnectDB(cfg *Config) *gorm.DB {
 		Logger: logger.Default.LogMode(logLevel),
 	})
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err)
-		panic(fmt.Sprintf("failed to connect to database: %v", err))
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Configure connection pool
 	sqlDB, err := db.DB()
 	if err != nil {
-		slog.Error("failed to get underlying sql.DB", "error", err)
-		panic(fmt.Sprintf("failed to get sql.DB: %v", err))
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
 	sqlDB.SetMaxOpenConns(25)
@@ -43,10 +39,8 @@ func ConnectDB(cfg *Config) *gorm.DB {
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	sqlDB.SetConnMaxIdleTime(1 * time.Minute)
 
-	// Verify connection
 	if err := sqlDB.Ping(); err != nil {
-		slog.Error("failed to ping database", "error", err)
-		panic(fmt.Sprintf("failed to ping database: %v", err))
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	slog.Info("database connected successfully",
@@ -55,5 +49,5 @@ func ConnectDB(cfg *Config) *gorm.DB {
 		"db", cfg.DBName,
 	)
 
-	return db
+	return db, nil
 }
