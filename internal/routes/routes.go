@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	adminHandlers "sun-booking-tours/internal/handlers/admin"
+	publicHandlers "sun-booking-tours/internal/handlers/public"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/repository"
 	"sun-booking-tours/internal/services"
@@ -17,14 +18,21 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 	router.Use(middleware.LoadUser(db))
 
-	setupPublicRoutes(router)
+	setupPublicRoutes(router, db)
 	setupAdminRoutes(router, db)
 }
 
-func setupPublicRoutes(router *gin.Engine) {
+func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
+	// Wire public auth dependencies
+	userRepo := repository.NewUserRepository(db)
+	authService := services.NewAuthService(userRepo)
+	authHandler := publicHandlers.NewAuthHandler(authService)
+
 	public := router.Group("/")
 	{
 		public.GET("/", homePage)
+		public.GET("/register", authHandler.RegisterForm)
+		public.POST("/register", authHandler.Register)
 	}
 
 	// Protected public routes (requires login)
