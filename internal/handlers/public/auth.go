@@ -3,11 +3,13 @@ package public
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 
 	appErrors "sun-booking-tours/internal/errors"
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/services"
 
@@ -30,7 +32,7 @@ func (h *AuthHandler) RegisterForm(c *gin.Context) {
 		return
 	}
 	c.HTML(http.StatusOK, "public/pages/register.html", gin.H{
-		"title":      "Đăng ký tài khoản",
+		"title":      messages.TitleRegister,
 		"user":       nil,
 		"csrf_token": middleware.CSRFToken(c),
 	})
@@ -46,7 +48,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var form services.RegisterForm
 	if err := c.ShouldBind(&form); err != nil {
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/register.html", gin.H{
-			"title":      "Đăng ký tài khoản",
+			"title":      messages.TitleRegister,
 			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     translateBindErrors(err),
@@ -60,29 +62,34 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		var errMsg string
 		switch {
 		case appErrors.Is(err, appErrors.ErrEmailAlreadyTaken):
-			errMsg = "Email đã được sử dụng. Vui lòng dùng email khác hoặc đăng nhập."
+			errMsg = messages.ErrEmailTaken
+		case appErrors.Is(err, appErrors.ErrInternalServerError):
+			// Service already logged the root cause; show a safe generic message.
+			errMsg = messages.ErrInternalServer
 		default:
-			errMsg = err.Error()
+			// Unknown error — log it and show a safe fallback (no internal details).
+			slog.ErrorContext(c.Request.Context(), "register: unexpected error", "error", err)
+			errMsg = messages.ErrInternalServer
 		}
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/register.html", gin.H{
-			"title":      "Đăng ký tài khoản",
+			"title":      messages.TitleRegister,
 			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     []string{errMsg},
-			// Retain non-sensitive fields so the user doesn't retype everything
+			// Retain non-sensitive fields so the user doesn't retype everything.
 			"form": form,
 		})
 		return
 	}
 
-	// Auto-login: store the new user's ID in session
+	// Auto-login: store the new user's ID in session.
 	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
-		middleware.SetFlashError(c, "Đăng ký thành công nhưng không thể đăng nhập tự động. Vui lòng đăng nhập.")
+		middleware.SetFlashError(c, messages.MsgRegisterAutoLoginFail)
 		c.Redirect(http.StatusFound, "/login")
 		return
 	}
 
-	middleware.SetFlashSuccess(c, "Chào mừng "+user.FullName+"! Tài khoản của bạn đã được tạo thành công.")
+	middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgRegisterSuccess, user.FullName))
 	c.Redirect(http.StatusFound, "/")
 }
 
@@ -90,34 +97,34 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func translateBindErrors(err error) []string {
 	var valErrs validator.ValidationErrors
 	if !errors.As(err, &valErrs) {
-		return []string{"Dữ liệu gửi lên không hợp lệ."}
+		return []string{messages.ErrInvalidForm}
 	}
 
-	fields := map[string]string{
-		"FullName":        "Họ tên",
-		"Email":           "Email",
-		"Password":        "Mật khẩu",
-		"PasswordConfirm": "Xác nhận mật khẩu",
+	fieldLabels := map[string]string{
+		"FullName":        messages.FieldFullName,
+		"Email":           messages.FieldEmail,
+		"Password":        messages.FieldPassword,
+		"PasswordConfirm": messages.FieldPasswordConfirm,
 	}
 
 	msgs := make([]string, 0, len(valErrs))
 	for _, fe := range valErrs {
 		label := fe.Field()
-		if vn, ok := fields[fe.Field()]; ok {
+		if vn, ok := fieldLabels[fe.Field()]; ok {
 			label = vn
 		}
 		var msg string
 		switch fe.Tag() {
 		case "required":
-			msg = fmt.Sprintf("%s là bắt buộc.", label)
+			msg = fmt.Sprintf(messages.ValRequired, label)
 		case "email":
-			msg = fmt.Sprintf("%s phải là địa chỉ email hợp lệ.", label)
+			msg = fmt.Sprintf(messages.ValEmail, label)
 		case "min":
-			msg = fmt.Sprintf("%s phải có ít nhất %s ký tự.", label, fe.Param())
+			msg = fmt.Sprintf(messages.ValMin, label, fe.Param())
 		case "max":
-			msg = fmt.Sprintf("%s không được vượt quá %s ký tự.", label, fe.Param())
+			msg = fmt.Sprintf(messages.ValMax, label, fe.Param())
 		default:
-			msg = fmt.Sprintf("%s không hợp lệ.", label)
+			msg = fmt.Sprintf(messages.ValInvalid, label)
 		}
 		msgs = append(msgs, msg)
 	}
