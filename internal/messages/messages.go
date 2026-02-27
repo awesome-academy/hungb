@@ -34,6 +34,40 @@ const (
 	MsgLogoutSuccess    = "Bạn đã đăng xuất thành công."
 )
 
+// ── Auth service internal text (sentinel + logs)
+const (
+	AuthErrAdminMustUsePortal = "admin must use admin portal"
+	AuthErrAccountBanned      = "account banned"
+	AuthErrAccountInactive    = "account inactive"
+
+	LogRegisterCheckEmailExists = "register: check email exists"
+	LogRegisterHashPassword     = "register: hash password"
+	LogRegisterCreateUser       = "register: create user"
+	LogRegisterUnexpectedError  = "register: unexpected error"
+)
+
+// ── Admin dashboard
+const (
+	TitleAdminDashboard = "Dashboard"
+
+	DashboardLabelTotalUsers   = "Tổng người dùng"
+	DashboardLabelActiveTours  = "Tour đang hoạt động"
+	DashboardLabelTodayBooking = "Đặt tour hôm nay"
+	DashboardLabelMonthRevenue = "Doanh thu tháng"
+
+	LogDashboardLoadStatsFailed = "failed to load dashboard stats"
+)
+
+// ── Stats service internal text (wrapped error context)
+const (
+	ErrCtxCountUsers         = "count users"
+	ErrCtxCountTours         = "count tours"
+	ErrCtxCountTodayBookings = "count today bookings"
+	ErrCtxSumMonthRevenue    = "sum month revenue"
+	ErrCtxRecentBookings     = "recent bookings"
+	ErrCtxPendingReviews     = "pending reviews"
+)
+
 // ── Form field labels (used in validation error messages)
 const (
 	FieldFullName        = "Họ tên"
@@ -51,8 +85,7 @@ const (
 	ValInvalid  = "%s không hợp lệ."
 )
 
-// ── App bootstrap / logging ───────────────────────────────────────────────────
-
+// ── App bootstrap / logging
 const (
 	FlagMigrateDescription = "Run database migration"
 	FlagSeedDescription    = "Seed database with initial data"

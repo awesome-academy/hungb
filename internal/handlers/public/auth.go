@@ -68,7 +68,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			errMsg = messages.ErrInternalServer
 		default:
 			// Unknown error — log it and show a safe fallback (no internal details).
-			slog.ErrorContext(c.Request.Context(), "register: unexpected error", "error", err)
+			slog.ErrorContext(c.Request.Context(), messages.LogRegisterUnexpectedError, "error", err)
 			errMsg = messages.ErrInternalServer
 		}
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/register.html", gin.H{

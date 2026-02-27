@@ -16,9 +16,9 @@ import (
 
 // Sentinel errors for Login — distinguishable by appErrors.Is.
 var (
-	ErrAdminMustUsePortal = appErrors.NewAppError(403, "admin must use admin portal")
-	ErrAccountBanned      = appErrors.NewAppError(403, "account banned")
-	ErrAccountInactive    = appErrors.NewAppError(403, "account inactive")
+	ErrAdminMustUsePortal = appErrors.NewAppError(403, messages.AuthErrAdminMustUsePortal)
+	ErrAccountBanned      = appErrors.NewAppError(403, messages.AuthErrAccountBanned)
+	ErrAccountInactive    = appErrors.NewAppError(403, messages.AuthErrAccountInactive)
 )
 
 // LoginForm holds data submitted from the public login form.
@@ -91,7 +91,7 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 	// Best-effort uniqueness pre-check (optimistic path; not a hard guarantee).
 	exists, err := s.userRepo.ExistsByEmail(ctx, form.Email)
 	if err != nil {
-		slog.ErrorContext(ctx, "register: check email exists", "error", err)
+		slog.ErrorContext(ctx, messages.LogRegisterCheckEmailExists, "error", err)
 		return nil, appErrors.ErrInternalServerError
 	}
 	if exists {
@@ -101,7 +101,7 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 	// Hash password.
 	hashed, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.ErrorContext(ctx, "register: hash password", "error", err)
+		slog.ErrorContext(ctx, messages.LogRegisterHashPassword, "error", err)
 		return nil, appErrors.ErrInternalServerError
 	}
 
@@ -120,7 +120,7 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 		if appErrors.IsDuplicateEntryError(err) {
 			return nil, appErrors.ErrEmailAlreadyTaken
 		}
-		slog.ErrorContext(ctx, "register: create user", "error", err)
+		slog.ErrorContext(ctx, messages.LogRegisterCreateUser, "error", err)
 		return nil, fmt.Errorf("%w", appErrors.ErrInternalServerError)
 	}
 
