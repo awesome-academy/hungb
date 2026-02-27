@@ -167,9 +167,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
-// Logout handles GET /logout.
+// Logout handles POST /logout.
 func (h *AuthHandler) Logout(c *gin.Context) {
-	_ = middleware.ClearSession(c)
+	if err := middleware.ClearSession(c); err != nil {
+		slog.ErrorContext(c.Request.Context(), messages.LogLogoutClearSessionFailed, "error", err)
+		middleware.ExpireSessionCookie(c)
+	}
 	middleware.SetFlashSuccess(c, messages.MsgLogoutSuccess)
 	c.Redirect(http.StatusFound, constants.RouteHome)
 }

@@ -45,9 +45,10 @@ const (
 	LogRegisterCreateUser       = "register: create user"
 	LogRegisterUnexpectedError  = "register: unexpected error"
 
-	LogLoginFindUser         = "login: find user by email failed"
-	LogLoginUnexpectedError  = "login: unexpected error"
-	LogLoginSetSessionFailed = "login: set session failed"
+	LogLoginFindUser            = "login: find user by email failed"
+	LogLoginUnexpectedError     = "login: unexpected error"
+	LogLoginSetSessionFailed    = "login: set session failed"
+	LogLogoutClearSessionFailed = "logout: clear session failed"
 
 	LogAdminLoginFindUser   = "admin login: find user by email failed"
 	LogAdminLoginUnexpected = "admin login: unexpected error"
@@ -110,6 +111,7 @@ const (
 
 	LogTemplateNotFound        = "template not found"
 	LogTemplateWalkFailed      = "failed to walk templates directory"
+	LogTemplateRelPathFail     = "failed to compute relative template path"
 	LogSharedTemplateReadFail  = "failed to read shared template"
 	LogSharedTemplateParseFail = "failed to parse shared template"
 	LogPageTemplateReadFail    = "failed to read page template"

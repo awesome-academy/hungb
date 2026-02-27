@@ -42,6 +42,15 @@ func ClearSession(c *gin.Context) error {
 	return session.Save()
 }
 
+func ExpireSessionCookie(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Options(sessions.Options{
+		Path:   "/",
+		MaxAge: -1,
+	})
+	_ = session.Save()
+}
+
 // LoadUser loads the authenticated user from session into gin.Context.
 // Does NOT block unauthenticated requests.
 func LoadUser(db *gorm.DB) gin.HandlerFunc {
