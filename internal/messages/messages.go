@@ -44,6 +44,17 @@ const (
 	LogRegisterHashPassword     = "register: hash password"
 	LogRegisterCreateUser       = "register: create user"
 	LogRegisterUnexpectedError  = "register: unexpected error"
+
+	LogLoginFindUser         = "login: find user by email failed"
+	LogLoginUnexpectedError  = "login: unexpected error"
+	LogLoginSetSessionFailed = "login: set session failed"
+
+	LogAdminLoginFindUser   = "admin login: find user by email failed"
+	LogAdminLoginUnexpected = "admin login: unexpected error"
+)
+
+const (
+	TitleHome = "Trang chủ"
 )
 
 // ── Admin dashboard

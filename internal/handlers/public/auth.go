@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
@@ -28,12 +29,11 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 // Redirects to "/" if the user is already logged in.
 func (h *AuthHandler) RegisterForm(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
-		c.Redirect(http.StatusFound, "/")
+		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
 	c.HTML(http.StatusOK, "public/pages/register.html", gin.H{
 		"title":      messages.TitleRegister,
-		"user":       nil,
 		"csrf_token": middleware.CSRFToken(c),
 	})
 }
@@ -41,7 +41,7 @@ func (h *AuthHandler) RegisterForm(c *gin.Context) {
 // Register handles POST /register.
 func (h *AuthHandler) Register(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
-		c.Redirect(http.StatusFound, "/")
+		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
 
@@ -49,7 +49,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if err := c.ShouldBind(&form); err != nil {
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/register.html", gin.H{
 			"title":      messages.TitleRegister,
-			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     translateBindErrors(err),
 			"form":       form,
@@ -73,7 +72,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		}
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/register.html", gin.H{
 			"title":      messages.TitleRegister,
-			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     []string{errMsg},
 			// Retain non-sensitive fields so the user doesn't retype everything.
@@ -84,25 +82,25 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	// Auto-login: store the new user's ID in session.
 	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
+		slog.ErrorContext(c.Request.Context(), messages.LogLoginSetSessionFailed, "error", err)
 		middleware.SetFlashError(c, messages.MsgRegisterAutoLoginFail)
-		c.Redirect(http.StatusFound, "/login")
+		c.Redirect(http.StatusFound, constants.RouteLogin)
 		return
 	}
 
 	middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgRegisterSuccess, user.FullName))
-	c.Redirect(http.StatusFound, "/")
+	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
 // LoginForm renders GET /login.
 // Redirects to "/" if the user is already logged in.
 func (h *AuthHandler) LoginForm(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
-		c.Redirect(http.StatusFound, "/")
+		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
 	c.HTML(http.StatusOK, "public/pages/login.html", gin.H{
 		"title":      messages.TitleLogin,
-		"user":       nil,
 		"csrf_token": middleware.CSRFToken(c),
 	})
 }
@@ -110,7 +108,7 @@ func (h *AuthHandler) LoginForm(c *gin.Context) {
 // Login handles POST /login.
 func (h *AuthHandler) Login(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
-		c.Redirect(http.StatusFound, "/")
+		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
 
@@ -118,7 +116,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	if err := c.ShouldBind(&form); err != nil {
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/login.html", gin.H{
 			"title":      messages.TitleLogin,
-			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     translateBindErrors(err),
 			"form":       form,
@@ -132,7 +129,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		switch {
 		case appErrors.Is(err, services.ErrAdminMustUsePortal):
 			middleware.SetFlashError(c, messages.ErrAdminMustUsePortal)
-			c.Redirect(http.StatusFound, "/admin/login")
+			c.Redirect(http.StatusFound, constants.RouteAdminLogin)
 			return
 		case appErrors.Is(err, services.ErrAccountBanned):
 			errMsg = messages.ErrAccountBanned
@@ -140,12 +137,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			errMsg = messages.ErrAccountNotActive
 		case appErrors.Is(err, appErrors.ErrInvalidCredentials):
 			errMsg = messages.ErrInvalidCredentials
+		case appErrors.Is(err, appErrors.ErrInternalServerError):
+			errMsg = messages.ErrInternalServer
 		default:
+			slog.ErrorContext(c.Request.Context(), messages.LogLoginUnexpectedError, "error", err)
 			errMsg = messages.ErrTryAgain
 		}
 		c.HTML(http.StatusUnprocessableEntity, "public/pages/login.html", gin.H{
 			"title":      messages.TitleLogin,
-			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     []string{errMsg},
 			"form":       form,
@@ -154,9 +153,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
+		slog.ErrorContext(c.Request.Context(), messages.LogLoginSetSessionFailed, "error", err)
 		c.HTML(http.StatusInternalServerError, "public/pages/login.html", gin.H{
 			"title":      messages.TitleLogin,
-			"user":       nil,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     []string{messages.ErrCreateSessionFail},
 			"form":       form,
@@ -165,14 +164,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgLoginWelcomeBack, user.FullName))
-	c.Redirect(http.StatusFound, "/")
+	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
 // Logout handles GET /logout.
 func (h *AuthHandler) Logout(c *gin.Context) {
 	_ = middleware.ClearSession(c)
 	middleware.SetFlashSuccess(c, messages.MsgLogoutSuccess)
-	c.Redirect(http.StatusFound, "/")
+	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
 // translateBindErrors converts go-playground/validator errors into Vietnamese messages.

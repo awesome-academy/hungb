@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/models"
 
@@ -67,7 +68,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if user.Status != "active" {
+		if user.Status != constants.StatusActive {
 			slog.Warn(appErrors.ErrUserNotActive.Message, "user_id", id, "status", user.Status)
 			session.Delete(sessionKeyUserID)
 			_ = session.Save()
@@ -83,7 +84,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 func RequireLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if GetCurrentUser(c) == nil {
-			c.Redirect(http.StatusFound, "/login")
+			c.Redirect(http.StatusFound, constants.RouteLogin)
 			c.Abort()
 			return
 		}
@@ -94,8 +95,8 @@ func RequireLogin() gin.HandlerFunc {
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user := GetCurrentUser(c)
-		if user == nil || user.Role != "admin" {
-			c.Redirect(http.StatusFound, "/admin/login")
+		if user == nil || user.Role != constants.RoleAdmin {
+			c.Redirect(http.StatusFound, constants.RouteAdminLogin)
 			c.Abort()
 			return
 		}

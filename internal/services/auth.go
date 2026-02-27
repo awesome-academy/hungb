@@ -2,16 +2,19 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/models"
 	"sun-booking-tours/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // Sentinel errors for Login — distinguishable by appErrors.Is.
@@ -51,8 +54,11 @@ func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User,
 
 	user, err := s.userRepo.FindByEmail(ctx, form.Email)
 	if err != nil {
-		// Don't reveal whether the email exists
-		return nil, appErrors.ErrInvalidCredentials
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErrors.ErrInvalidCredentials
+		}
+		slog.ErrorContext(ctx, messages.LogLoginFindUser, "email", form.Email, "error", err)
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
@@ -60,13 +66,13 @@ func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User,
 	}
 
 	switch user.Status {
-	case "banned":
+	case constants.StatusBanned:
 		return nil, ErrAccountBanned
-	case "inactive":
+	case constants.StatusInactive:
 		return nil, ErrAccountInactive
 	}
 
-	if user.Role == "admin" {
+	if user.Role == constants.RoleAdmin {
 		return nil, ErrAdminMustUsePortal
 	}
 
@@ -109,8 +115,8 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 		FullName: form.FullName,
 		Email:    form.Email,
 		Password: string(hashed),
-		Role:     "user",
-		Status:   "active",
+		Role:     constants.RoleUser,
+		Status:   constants.StatusActive,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
