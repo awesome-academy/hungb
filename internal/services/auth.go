@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	appErrors "sun-booking-tours/internal/errors"
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/models"
 	"sun-booking-tours/internal/repository"
 
@@ -34,10 +36,10 @@ type RegisterForm struct {
 }
 
 type AuthService struct {
-	userRepo *repository.UserRepository
+	userRepo repository.UserRepo
 }
 
-func NewAuthService(userRepo *repository.UserRepository) *AuthService {
+func NewAuthService(userRepo repository.UserRepo) *AuthService {
 	return &AuthService{userRepo: userRepo}
 }
 
@@ -74,31 +76,33 @@ func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User,
 // Register validates form data, hashes the password, and creates a new user.
 // Returns the created user or an *AppError describing what went wrong.
 func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models.User, error) {
-	// Normalise email
+	// Normalise email and name so stored values are always consistent.
 	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
 	form.FullName = strings.TrimSpace(form.FullName)
 
-	// Password confirmation check
+	// Password confirmation check.
 	if form.Password != form.PasswordConfirm {
-		return nil, fmt.Errorf("%w", &appErrors.AppError{
+		return nil, &appErrors.AppError{
 			Status:  400,
-			Message: "Mật khẩu xác nhận không khớp",
-		})
+			Message: messages.ErrPasswordMismatch,
+		}
 	}
 
-	// Unique email check
+	// Best-effort uniqueness pre-check (optimistic path; not a hard guarantee).
 	exists, err := s.userRepo.ExistsByEmail(ctx, form.Email)
 	if err != nil {
-		return nil, fmt.Errorf("check email: %w", err)
+		slog.ErrorContext(ctx, "register: check email exists", "error", err)
+		return nil, appErrors.ErrInternalServerError
 	}
 	if exists {
 		return nil, appErrors.ErrEmailAlreadyTaken
 	}
 
-	// Hash password
+	// Hash password.
 	hashed, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, fmt.Errorf("hash password: %w", err)
+		slog.ErrorContext(ctx, "register: hash password", "error", err)
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	user := &models.User{
@@ -110,7 +114,14 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return nil, fmt.Errorf("create user: %w", err)
+		// Two concurrent registrations can both pass ExistsByEmail and then one
+		// will hit the DB unique constraint. Map that to the correct sentinel so
+		// the user sees a proper message and no internal details leak.
+		if appErrors.IsDuplicateEntryError(err) {
+			return nil, appErrors.ErrEmailAlreadyTaken
+		}
+		slog.ErrorContext(ctx, "register: create user", "error", err)
+		return nil, fmt.Errorf("%w", appErrors.ErrInternalServerError)
 	}
 
 	return user, nil

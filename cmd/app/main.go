@@ -10,6 +10,7 @@ import (
 
 	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/database"
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/routes"
 
@@ -19,8 +20,8 @@ import (
 
 func main() {
 	// CLI flags for database operations
-	migrateFlag := flag.Bool("migrate", false, "Run database migration")
-	seedFlag := flag.Bool("seed", false, "Seed database with initial data")
+	migrateFlag := flag.Bool("migrate", false, messages.FlagMigrateDescription)
+	seedFlag := flag.Bool("seed", false, messages.FlagSeedDescription)
 	flag.Parse()
 
 	//TODO: Set up structured logging
@@ -30,7 +31,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	cfg := config.LoadConfig()
-	slog.Info("configuration loaded",
+	slog.Info(messages.LogConfigurationLoaded,
 		"port", cfg.Port,
 		"gin_mode", cfg.GinMode,
 		"db_host", cfg.DBHost,
@@ -40,7 +41,7 @@ func main() {
 	// Connect to database
 	db, err := config.ConnectDB(cfg)
 	if err != nil {
-		slog.Error("database connection failed", "error", err)
+		slog.Error(messages.LogDatabaseConnFailed, "error", err)
 		os.Exit(1)
 	}
 
@@ -48,13 +49,13 @@ func main() {
 	if *migrateFlag || *seedFlag {
 		if *migrateFlag {
 			if err := database.Migrate(db); err != nil {
-				slog.Error("migration failed", "error", err)
+				slog.Error(messages.LogMigrationFailed, "error", err)
 				os.Exit(1)
 			}
 		}
 		if *seedFlag {
 			if err := database.Seed(db); err != nil {
-				slog.Error("seeding failed", "error", err)
+				slog.Error(messages.LogSeedingFailed, "error", err)
 				os.Exit(1)
 			}
 		}
@@ -87,9 +88,9 @@ func main() {
 
 	// Start server
 	addr := ":" + cfg.Port
-	slog.Info("starting server", "addr", addr)
+	slog.Info(messages.LogStartingServer, "addr", addr)
 	if err := r.Run(addr); err != nil {
-		slog.Error("server failed to start", "error", err)
+		slog.Error(messages.LogServerStartFailed, "error", err)
 		os.Exit(1)
 	}
 }
@@ -104,15 +105,12 @@ type multiRenderer struct {
 func (mr *multiRenderer) Instance(name string, data any) render.Render {
 	t, ok := mr.sets[name]
 	if !ok {
-		slog.Warn("template not found", "name", name)
-		t = template.Must(template.New(name).Parse("template not found: " + name))
+		slog.Warn(messages.LogTemplateNotFound, "name", name)
+		t = template.Must(template.New(name).Parse(messages.TemplateNotFoundText + name))
 	}
 	return render.HTML{Template: t, Name: name, Data: data}
 }
 
-// loadTemplates builds a multiRenderer.
-// Files outside of /pages/ (layouts, partials) are treated as shared and
-// included in every page's template set.
 func loadTemplates(baseDir string) render.HTMLRender {
 	var sharedFiles []string
 	var pageFiles []string
@@ -131,7 +129,7 @@ func loadTemplates(baseDir string) render.HTMLRender {
 		return nil
 	})
 	if err != nil {
-		slog.Error("failed to walk templates directory", "error", err)
+		slog.Error(messages.LogTemplateWalkFailed, "error", err)
 		os.Exit(1)
 	}
 
@@ -142,38 +140,35 @@ func loadTemplates(baseDir string) render.HTMLRender {
 		rel = filepath.ToSlash(rel)
 
 		t := template.New("").Funcs(template.FuncMap{
-			// add shared FuncMap entries here if needed
 			"safeHTML": func(s string) template.HTML { return template.HTML(s) },
 		})
 
-		// Parse shared files (layouts + partials) first
 		for _, sf := range sharedFiles {
 			sfRel, _ := filepath.Rel(baseDir, sf)
 			sfRel = filepath.ToSlash(sfRel)
 			data, err := os.ReadFile(sf)
 			if err != nil {
-				slog.Error("failed to read shared template", "path", sfRel, "error", err)
+				slog.Error(messages.LogSharedTemplateReadFail, "path", sfRel, "error", err)
 				os.Exit(1)
 			}
 			if _, err = t.New(sfRel).Parse(string(data)); err != nil {
-				slog.Error("failed to parse shared template", "path", sfRel, "error", err)
+				slog.Error(messages.LogSharedTemplateParseFail, "path", sfRel, "error", err)
 				os.Exit(1)
 			}
 		}
 
-		// Parse the page itself
 		data, err := os.ReadFile(pagePath)
 		if err != nil {
-			slog.Error("failed to read page template", "path", rel, "error", err)
+			slog.Error(messages.LogPageTemplateReadFail, "path", rel, "error", err)
 			os.Exit(1)
 		}
 		if _, err = t.New(rel).Parse(string(data)); err != nil {
-			slog.Error("failed to parse page template", "path", rel, "error", err)
+			slog.Error(messages.LogPageTemplateParseFail, "path", rel, "error", err)
 			os.Exit(1)
 		}
 
 		sets[rel] = t
-		slog.Debug("loaded page template", "name", rel)
+		slog.Debug(messages.LogLoadedPageTemplate, "name", rel)
 	}
 
 	return &multiRenderer{sets: sets}
