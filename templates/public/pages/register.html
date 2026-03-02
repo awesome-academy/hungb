@@ -77,6 +77,28 @@
 
           <hr class="my-4" />
 
+          {{if or .GoogleOAuthEnabled (or .FacebookOAuthEnabled .TwitterOAuthEnabled)}}
+          <div class="d-grid gap-2 mb-3">
+            {{if .GoogleOAuthEnabled}}
+            <a href="/auth/google" class="btn btn-outline-danger">
+              <i class="bi bi-google me-2"></i>Đăng ký với Google
+            </a>
+            {{end}}
+            {{if .FacebookOAuthEnabled}}
+            <a href="/auth/facebook" class="btn btn-outline-primary">
+              <i class="bi bi-facebook me-2"></i>Đăng ký với Facebook
+            </a>
+            {{end}}
+            {{if .TwitterOAuthEnabled}}
+            <a href="/auth/twitterv2" class="btn btn-outline-dark">
+              <i class="bi bi-twitter-x me-2"></i>Đăng ký với Twitter
+            </a>
+            {{end}}
+          </div>
+
+          <hr class="my-4" />
+          {{end}}
+
           <p class="text-center mb-0">
             Đã có tài khoản?
             <a href="/login" class="fw-semibold">Đăng nhập</a>
