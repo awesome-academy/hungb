@@ -1,0 +1,74 @@
+{{template "admin_login_base" .}}
+
+{{define "content"}}
+<div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+  <div class="col-md-5 col-lg-4">
+
+    <div class="text-center mb-4">
+      <h3>SUN * Booking Tours</h3>
+      <p class="text-muted">Admin</p>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title text-center mb-4">Đăng nhập</h4>
+
+        {{if .error}}
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>{{.error}}
+        </div>
+        {{end}}
+
+        {{if .flash_success}}
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-check-circle-fill me-1"></i>{{.flash_success}}
+        </div>
+        {{end}}
+
+        <form method="POST" action="/admin/login" novalidate>
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-control"
+              placeholder="admin@sunbooking.vn"
+              value="{{if .form}}{{.form.Email}}{{end}}"
+              required
+              autofocus
+            />
+          </div>
+
+          <div class="mb-4">
+            <label for="password" class="form-label">Mật khẩu</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-control"
+              placeholder="Nhập mật khẩu"
+              required
+            />
+          </div>
+
+          <div class="d-grid">
+            <button type="submit" class="btn btn-dark btn-lg">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-center text-muted mt-3">
+      <a href="/" class="text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>Về trang chủ
+      </a>
+    </p>
+
+  </div>
+</div>
+{{end}}

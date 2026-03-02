@@ -81,7 +81,7 @@ func main() {
 	middleware.SetupSession(r, cfg.SessionSecret)
 	r.Use(middleware.CSRFMiddleware(cfg.SessionSecret))
 
-	routes.SetupRoutes(r, db)
+	routes.SetupRoutes(r, db, cfg)
 
 	// Start server
 	addr := ":" + cfg.Port
