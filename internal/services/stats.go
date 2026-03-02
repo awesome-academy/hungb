@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/models"
 	"sun-booking-tours/internal/repository"
 )
@@ -33,27 +34,27 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 	var err error
 
 	if stats.TotalUsers, err = s.repo.CountUsers(ctx); err != nil {
-		return nil, fmt.Errorf("count users: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxCountUsers, err)
 	}
 
 	if stats.TotalTours, err = s.repo.CountActiveTours(ctx); err != nil {
-		return nil, fmt.Errorf("count tours: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxCountTours, err)
 	}
 
 	if stats.TodayBookings, err = s.repo.CountTodayBookings(ctx); err != nil {
-		return nil, fmt.Errorf("count today bookings: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxCountTodayBookings, err)
 	}
 
 	if stats.MonthRevenue, err = s.repo.SumMonthRevenue(ctx); err != nil {
-		return nil, fmt.Errorf("sum month revenue: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxSumMonthRevenue, err)
 	}
 
 	if stats.RecentBookings, err = s.repo.RecentBookings(ctx, 5); err != nil {
-		return nil, fmt.Errorf("recent bookings: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxRecentBookings, err)
 	}
 
 	if stats.PendingReviews, err = s.repo.PendingReviews(ctx, 5); err != nil {
-		return nil, fmt.Errorf("pending reviews: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxPendingReviews, err)
 	}
 
 	return stats, nil

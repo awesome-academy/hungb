@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/models"
 
@@ -41,6 +42,15 @@ func ClearSession(c *gin.Context) error {
 	return session.Save()
 }
 
+func ExpireSessionCookie(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Options(sessions.Options{
+		Path:   "/",
+		MaxAge: -1,
+	})
+	_ = session.Save()
+}
+
 // LoadUser loads the authenticated user from session into gin.Context.
 // Does NOT block unauthenticated requests.
 func LoadUser(db *gorm.DB) gin.HandlerFunc {
@@ -67,7 +77,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		if user.Status != "active" {
+		if user.Status != constants.StatusActive {
 			slog.Warn(appErrors.ErrUserNotActive.Message, "user_id", id, "status", user.Status)
 			session.Delete(sessionKeyUserID)
 			_ = session.Save()
@@ -83,7 +93,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 func RequireLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if GetCurrentUser(c) == nil {
-			c.Redirect(http.StatusFound, "/login")
+			c.Redirect(http.StatusFound, constants.RouteLogin)
 			c.Abort()
 			return
 		}
@@ -94,8 +104,8 @@ func RequireLogin() gin.HandlerFunc {
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user := GetCurrentUser(c)
-		if user == nil || user.Role != "admin" {
-			c.Redirect(http.StatusFound, "/admin/login")
+		if user == nil || user.Role != constants.RoleAdmin {
+			c.Redirect(http.StatusFound, constants.RouteAdminLogin)
 			c.Abort()
 			return
 		}

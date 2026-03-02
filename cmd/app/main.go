@@ -10,16 +10,18 @@ import (
 
 	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/database"
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/routes"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 )
 
 func main() {
 	// CLI flags for database operations
-	migrateFlag := flag.Bool("migrate", false, "Run database migration")
-	seedFlag := flag.Bool("seed", false, "Seed database with initial data")
+	migrateFlag := flag.Bool("migrate", false, messages.FlagMigrateDescription)
+	seedFlag := flag.Bool("seed", false, messages.FlagSeedDescription)
 	flag.Parse()
 
 	//TODO: Set up structured logging
@@ -29,7 +31,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	cfg := config.LoadConfig()
-	slog.Info("configuration loaded",
+	slog.Info(messages.LogConfigurationLoaded,
 		"port", cfg.Port,
 		"gin_mode", cfg.GinMode,
 		"db_host", cfg.DBHost,
@@ -39,7 +41,7 @@ func main() {
 	// Connect to database
 	db, err := config.ConnectDB(cfg)
 	if err != nil {
-		slog.Error("database connection failed", "error", err)
+		slog.Error(messages.LogDatabaseConnFailed, "error", err)
 		os.Exit(1)
 	}
 
@@ -47,13 +49,13 @@ func main() {
 	if *migrateFlag || *seedFlag {
 		if *migrateFlag {
 			if err := database.Migrate(db); err != nil {
-				slog.Error("migration failed", "error", err)
+				slog.Error(messages.LogMigrationFailed, "error", err)
 				os.Exit(1)
 			}
 		}
 		if *seedFlag {
 			if err := database.Seed(db); err != nil {
-				slog.Error("seeding failed", "error", err)
+				slog.Error(messages.LogSeedingFailed, "error", err)
 				os.Exit(1)
 			}
 		}
@@ -66,16 +68,12 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// In development, reload templates on each request for hot reload
-	// In production, load once at startup for performance
+	// In development, use a renderer that reloads on each request.
+	// In production, load once at startup for performance.
 	if cfg.GinMode == gin.DebugMode {
-		r.Use(func(c *gin.Context) {
-			r.SetHTMLTemplate(loadTemplates("templates"))
-			c.Next()
-		})
+		r.HTMLRender = &devRenderer{baseDir: "templates"}
 	} else {
-		tmpl := loadTemplates("templates")
-		r.SetHTMLTemplate(tmpl)
+		r.HTMLRender = loadTemplates("templates")
 	}
 
 	r.Static("/static", "./static")
@@ -87,53 +85,115 @@ func main() {
 
 	// Start server
 	addr := ":" + cfg.Port
-	slog.Info("starting server", "addr", addr)
+	slog.Info(messages.LogStartingServer, "addr", addr)
 	if err := r.Run(addr); err != nil {
-		slog.Error("server failed to start", "error", err)
+		slog.Error(messages.LogServerStartFailed, "error", err)
 		os.Exit(1)
 	}
 }
 
-// loadTemplates recursively loads all .html template files and registers them
-// with paths relative to the base directory (e.g., "public/pages/home.html").
-func loadTemplates(baseDir string) *template.Template {
-	tmpl := template.New("")
+// multiRenderer holds one *template.Template set per page.
+// Each set contains all shared layouts/partials plus one page file,
+// so {{define "content"}} blocks never collide across pages.
+type multiRenderer struct {
+	sets map[string]*template.Template
+}
+
+func (mr *multiRenderer) Instance(name string, data any) render.Render {
+	t, ok := mr.sets[name]
+	if !ok {
+		slog.Warn(messages.LogTemplateNotFound, "name", name)
+		t = template.Must(template.New(name).Parse(messages.TemplateNotFoundText + name))
+	}
+	return render.HTML{Template: t, Name: name, Data: data}
+}
+
+// devRenderer reloads all templates on every request (debug mode only).
+// Unlike mutating gin.Engine.HTMLRender in middleware, this is safe under
+// concurrent requests because loadTemplates returns a fresh snapshot and
+// no shared mutable state is touched.
+type devRenderer struct {
+	baseDir string
+}
+
+func (dr *devRenderer) Instance(name string, data any) render.Render {
+	fresh := loadTemplates(dr.baseDir).(*multiRenderer)
+	return fresh.Instance(name, data)
+}
+
+func loadTemplates(baseDir string) render.HTMLRender {
+	var sharedFiles []string
+	var pageFiles []string
 
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".html") {
 			return err
 		}
-		if info.IsDir() {
-			return nil
+		rel, relErr := filepath.Rel(baseDir, path)
+		if relErr != nil {
+			slog.Error(messages.LogTemplateRelPathFail, "base", baseDir, "path", path, "error", relErr)
+			os.Exit(1)
 		}
-		if !strings.HasSuffix(path, ".html") {
-			return nil
+		rel = filepath.ToSlash(rel)
+		if strings.Contains(rel, "/pages/") {
+			pageFiles = append(pageFiles, path)
+		} else {
+			sharedFiles = append(sharedFiles, path)
 		}
-
-		relPath, err := filepath.Rel(baseDir, path)
-		if err != nil {
-			return err
-		}
-		relPath = filepath.ToSlash(relPath)
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		_, err = tmpl.New(relPath).Parse(string(data))
-		if err != nil {
-			slog.Error("failed to parse template", "path", relPath, "error", err)
-			return err
-		}
-		slog.Debug("loaded template", "name", relPath)
 		return nil
 	})
-
 	if err != nil {
-		slog.Error("failed to load templates", "error", err)
+		slog.Error(messages.LogTemplateWalkFailed, "error", err)
 		os.Exit(1)
 	}
 
-	return tmpl
+	sets := make(map[string]*template.Template, len(pageFiles))
+
+	for _, pagePath := range pageFiles {
+		rel, relErr := filepath.Rel(baseDir, pagePath)
+		if relErr != nil {
+			slog.Error(messages.LogTemplateRelPathFail, "base", baseDir, "path", pagePath, "error", relErr)
+			os.Exit(1)
+		}
+		rel = filepath.ToSlash(rel)
+
+		// Only add template helpers that are safe by design.
+		// Avoid raw HTML helpers (e.g. safeHTML) unless the input is
+		// guaranteed to be sanitised — they disable auto-escaping
+		// and are an XSS vector if applied to user-controlled content.
+		t := template.New("").Funcs(template.FuncMap{})
+
+		for _, sf := range sharedFiles {
+			sfRel, sfRelErr := filepath.Rel(baseDir, sf)
+			if sfRelErr != nil {
+				slog.Error(messages.LogTemplateRelPathFail, "base", baseDir, "path", sf, "error", sfRelErr)
+				os.Exit(1)
+			}
+			sfRel = filepath.ToSlash(sfRel)
+			data, err := os.ReadFile(sf)
+			if err != nil {
+				slog.Error(messages.LogSharedTemplateReadFail, "path", sfRel, "error", err)
+				os.Exit(1)
+			}
+			if _, err = t.New(sfRel).Parse(string(data)); err != nil {
+				slog.Error(messages.LogSharedTemplateParseFail, "path", sfRel, "error", err)
+				os.Exit(1)
+			}
+		}
+
+		data, err := os.ReadFile(pagePath)
+		if err != nil {
+			slog.Error(messages.LogPageTemplateReadFail, "path", rel, "error", err)
+			os.Exit(1)
+		}
+		if _, err = t.New(rel).Parse(string(data)); err != nil {
+			slog.Error(messages.LogPageTemplateParseFail, "path", rel, "error", err)
+			os.Exit(1)
+		}
+
+		sets[rel] = t
+		slog.Debug(messages.LogLoadedPageTemplate, "name", rel)
+	}
+
+	return &multiRenderer{sets: sets}
 }

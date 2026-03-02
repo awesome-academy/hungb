@@ -3,8 +3,10 @@ package routes
 import (
 	"net/http"
 
+	"sun-booking-tours/internal/constants"
 	adminHandlers "sun-booking-tours/internal/handlers/admin"
 	publicHandlers "sun-booking-tours/internal/handlers/public"
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/repository"
 	"sun-booking-tours/internal/services"
@@ -33,6 +35,9 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
 		public.GET("/", homePage)
 		public.GET("/register", authHandler.RegisterForm)
 		public.POST("/register", authHandler.Register)
+		public.GET("/login", authHandler.LoginForm)
+		public.POST("/login", authHandler.Login)
+		public.POST("/logout", authHandler.Logout)
 	}
 
 	// Protected public routes (requires login)
@@ -67,7 +72,7 @@ func healthCheck(c *gin.Context) {
 func homePage(c *gin.Context) {
 	flashSuccess, flashError := middleware.GetFlash(c)
 	c.HTML(http.StatusOK, "public/pages/home.html", gin.H{
-		"title":         "Trang chủ",
+		"title":         messages.TitleHome,
 		"user":          middleware.GetCurrentUser(c),
 		"csrf_token":    middleware.CSRFToken(c),
 		"flash_success": flashSuccess,
@@ -76,5 +81,5 @@ func homePage(c *gin.Context) {
 }
 
 func redirectToDashboard(c *gin.Context) {
-	c.Redirect(http.StatusFound, "/admin/dashboard")
+	c.Redirect(http.StatusFound, constants.RouteAdminDashboard)
 }
