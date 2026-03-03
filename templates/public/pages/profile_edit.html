@@ -1,0 +1,83 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4">
+            <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa hồ sơ
+          </h2>
+
+          {{template "_form_errors" .}}
+
+          <form method="POST" action="/profile/edit" novalidate>
+            <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+            <div class="mb-3">
+              <label for="full_name" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="full_name"
+                name="full_name"
+                class="form-control"
+                placeholder="Nguyễn Văn A"
+                value="{{if .form}}{{.form.FullName}}{{end}}"
+                required
+                minlength="2"
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input
+                type="email"
+                id="email"
+                class="form-control"
+                value="{{.user.Email}}"
+                disabled
+              />
+              <div class="form-text">Email không thể thay đổi.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="phone" class="form-label">Số điện thoại</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                class="form-control"
+                placeholder="0912 345 678"
+                value="{{if .form}}{{.form.Phone}}{{end}}"
+              />
+            </div>
+
+            <div class="mb-4">
+              <label for="avatar_url" class="form-label">URL ảnh đại diện</label>
+              <input
+                type="url"
+                id="avatar_url"
+                name="avatar_url"
+                class="form-control"
+                placeholder="https://example.com/avatar.jpg"
+                value="{{if .form}}{{.form.AvatarURL}}{{end}}"
+              />
+              <div class="form-text">Nhập URL ảnh đại diện của bạn.</div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Lưu thay đổi
+              </button>
+              <a href="/profile" class="btn btn-outline-secondary">Hủy bỏ</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}

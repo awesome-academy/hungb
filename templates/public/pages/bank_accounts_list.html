@@ -1,0 +1,83 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-bank me-2"></i>Tài khoản ngân hàng</h2>
+        <a href="/bank-accounts/create" class="btn btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>Thêm mới
+        </a>
+      </div>
+
+      {{if .accounts}}
+      <div class="row g-3">
+        {{range .accounts}}
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h6 class="fw-semibold mb-0">
+                  <i class="bi bi-building me-1 text-primary"></i>{{.BankName}}
+                </h6>
+                {{if .IsDefault}}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Mặc định</span>
+                {{end}}
+              </div>
+              <p class="mb-1">
+                <span class="text-muted small">Số TK:</span>
+                <span class="fw-medium">{{.AccountNumber}}</span>
+              </p>
+              <p class="mb-3">
+                <span class="text-muted small">Chủ TK:</span>
+                <span>{{.AccountHolder}}</span>
+              </p>
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="/bank-accounts/{{.ID}}/edit" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-pencil me-1"></i>Sửa
+                </a>
+                {{if not .IsDefault}}
+                <form method="POST" action="/bank-accounts/{{.ID}}/set-default" class="d-inline">
+                  <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+                  <button type="submit" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-check-circle me-1"></i>Đặt mặc định
+                  </button>
+                </form>
+                {{end}}
+                <form method="POST" action="/bank-accounts/{{.ID}}/delete" class="d-inline"
+                      onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này?');">
+                  <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Xóa
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{else}}
+      <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-bank fs-1 text-muted d-block mb-3"></i>
+          <p class="text-muted mb-3">Bạn chưa có tài khoản ngân hàng nào.</p>
+          <a href="/bank-accounts/create" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Thêm tài khoản đầu tiên
+          </a>
+        </div>
+      </div>
+      {{end}}
+
+      <div class="mt-4">
+        <a href="/profile" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Quay lại hồ sơ
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}

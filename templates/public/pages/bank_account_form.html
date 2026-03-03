@@ -1,0 +1,76 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4">
+            <i class="bi bi-bank me-2"></i>
+            {{if .is_edit}}Chỉnh sửa tài khoản{{else}}Thêm tài khoản ngân hàng{{end}}
+          </h2>
+
+          {{template "_form_errors" .}}
+
+          <form method="POST"
+                action="{{if .is_edit}}/bank-accounts/{{.account.ID}}/edit{{else}}/bank-accounts/create{{end}}"
+                novalidate>
+            <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+            <div class="mb-3">
+              <label for="bank_name" class="form-label">Tên ngân hàng <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="bank_name"
+                name="bank_name"
+                class="form-control"
+                placeholder="VD: Vietcombank, BIDV, Techcombank..."
+                value="{{if .form}}{{.form.BankName}}{{end}}"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="account_number" class="form-label">Số tài khoản <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="account_number"
+                name="account_number"
+                class="form-control"
+                placeholder="VD: 1234567890"
+                value="{{if .form}}{{.form.AccountNumber}}{{end}}"
+                required
+              />
+            </div>
+
+            <div class="mb-4">
+              <label for="account_holder" class="form-label">Tên chủ tài khoản <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                id="account_holder"
+                name="account_holder"
+                class="form-control"
+                placeholder="VD: NGUYEN VAN A"
+                value="{{if .form}}{{.form.AccountHolder}}{{end}}"
+                required
+              />
+              <div class="form-text">Nhập đúng tên trên tài khoản ngân hàng (thường là chữ IN HOA không dấu).</div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>
+                {{if .is_edit}}Lưu thay đổi{{else}}Thêm tài khoản{{end}}
+              </button>
+              <a href="/bank-accounts" class="btn btn-outline-secondary">Hủy bỏ</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}

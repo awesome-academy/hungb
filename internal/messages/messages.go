@@ -109,12 +109,53 @@ const (
 	ErrCtxPendingReviews     = "pending reviews"
 )
 
+// ── Profile
+const (
+	TitleProfile     = "Hồ sơ cá nhân"
+	TitleProfileEdit = "Chỉnh sửa hồ sơ"
+
+	MsgProfileUpdateSuccess = "Cập nhật hồ sơ thành công."
+	ErrProfileUpdateFailed  = "Không thể cập nhật hồ sơ. Vui lòng thử lại."
+
+	LogProfileLoadFailed   = "profile: load user failed"
+	LogProfileUpdateFailed = "profile: update user failed"
+)
+
+// ── Bank Accounts
+const (
+	TitleBankAccounts    = "Tài khoản ngân hàng"
+	TitleBankAccountAdd  = "Thêm tài khoản ngân hàng"
+	TitleBankAccountEdit = "Chỉnh sửa tài khoản ngân hàng"
+
+	MsgBankAccountCreated    = "Thêm tài khoản ngân hàng thành công."
+	MsgBankAccountUpdated    = "Cập nhật tài khoản ngân hàng thành công."
+	MsgBankAccountDeleted    = "Xóa tài khoản ngân hàng thành công."
+	MsgBankAccountSetDefault = "Đã đặt tài khoản mặc định."
+
+	ErrBankAccountNotFound   = "Tài khoản ngân hàng không tồn tại."
+	ErrBankAccountForbidden  = "Bạn không có quyền thao tác tài khoản này."
+	ErrBankAccountCreateFail = "Không thể thêm tài khoản ngân hàng."
+	ErrBankAccountUpdateFail = "Không thể cập nhật tài khoản ngân hàng."
+	ErrBankAccountDeleteFail = "Không thể xóa tài khoản ngân hàng."
+
+	LogBankAccountLoadFailed       = "bank_account: load failed"
+	LogBankAccountCreateFailed     = "bank_account: create failed"
+	LogBankAccountUpdateFailed     = "bank_account: update failed"
+	LogBankAccountDeleteFailed     = "bank_account: delete failed"
+	LogBankAccountSetDefaultFailed = "bank_account: set default failed"
+)
+
 // ── Form field labels (used in validation error messages)
 const (
 	FieldFullName        = "Họ tên"
 	FieldEmail           = "Email"
 	FieldPassword        = "Mật khẩu"
 	FieldPasswordConfirm = "Xác nhận mật khẩu"
+	FieldPhone           = "Số điện thoại"
+	FieldAvatarURL       = "URL ảnh đại diện"
+	FieldBankName        = "Tên ngân hàng"
+	FieldAccountNumber   = "Số tài khoản"
+	FieldAccountHolder   = "Tên chủ tài khoản"
 )
 
 // ── Validation message templates (fmt.Sprintf, %s = field label / param)
