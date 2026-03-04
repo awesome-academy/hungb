@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
+	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/messages"
@@ -18,11 +19,19 @@ import (
 )
 
 type AuthHandler struct {
-	authService *services.AuthService
+	authService          *services.AuthService
+	googleOAuthEnabled   bool
+	facebookOAuthEnabled bool
+	twitterOAuthEnabled  bool
 }
 
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *services.AuthService, cfg *config.Config) *AuthHandler {
+	return &AuthHandler{
+		authService:          authService,
+		googleOAuthEnabled:   cfg.GoogleClientID != "" && cfg.GoogleClientSecret != "",
+		facebookOAuthEnabled: cfg.FBClientID != "" && cfg.FBClientSecret != "",
+		twitterOAuthEnabled:  cfg.TwitterAPIKey != "" && cfg.TwitterAPISecret != "",
+	}
 }
 
 // RegisterForm renders GET /register.
@@ -32,9 +41,15 @@ func (h *AuthHandler) RegisterForm(c *gin.Context) {
 		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
+	flashSuccess, flashError := middleware.GetFlash(c)
 	c.HTML(http.StatusOK, "public/pages/register.html", gin.H{
-		"title":      messages.TitleRegister,
-		"csrf_token": middleware.CSRFToken(c),
+		"title":                messages.TitleRegister,
+		"csrf_token":           middleware.CSRFToken(c),
+		"flash_success":        flashSuccess,
+		"flash_error":          flashError,
+		"GoogleOAuthEnabled":   h.googleOAuthEnabled,
+		"FacebookOAuthEnabled": h.facebookOAuthEnabled,
+		"TwitterOAuthEnabled":  h.twitterOAuthEnabled,
 	})
 }
 
@@ -99,9 +114,15 @@ func (h *AuthHandler) LoginForm(c *gin.Context) {
 		c.Redirect(http.StatusFound, constants.RouteHome)
 		return
 	}
+	flashSuccess, flashError := middleware.GetFlash(c)
 	c.HTML(http.StatusOK, "public/pages/login.html", gin.H{
-		"title":      messages.TitleLogin,
-		"csrf_token": middleware.CSRFToken(c),
+		"title":               messages.TitleLogin,
+		"csrf_token":          middleware.CSRFToken(c),
+		"flash_success":       flashSuccess,
+		"flash_error":         flashError,
+		"GoogleAuthEnabled":   h.googleOAuthEnabled,
+		"FacebookAuthEnabled": h.facebookOAuthEnabled,
+		"TwitterAuthEnabled":  h.twitterOAuthEnabled,
 	})
 }
 

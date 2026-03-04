@@ -37,12 +37,13 @@ type RegisterForm struct {
 }
 
 type AuthService struct {
+	db             *gorm.DB
 	userRepo       repository.UserRepo
 	socialAcctRepo repository.SocialAccountRepo
 }
 
-func NewAuthService(userRepo repository.UserRepo, socialAcctRepo repository.SocialAccountRepo) *AuthService {
-	return &AuthService{userRepo: userRepo, socialAcctRepo: socialAcctRepo}
+func NewAuthService(db *gorm.DB, userRepo repository.UserRepo, socialAcctRepo repository.SocialAccountRepo) *AuthService {
+	return &AuthService{db: db, userRepo: userRepo, socialAcctRepo: socialAcctRepo}
 }
 
 // Login verifies credentials and returns the authenticated user.
@@ -112,15 +113,30 @@ func (s *AuthService) AdminLogin(ctx context.Context, form *LoginForm) (*models.
 // OAuthLogin finds or creates a user from OAuth provider data.
 // If the social account exists, returns the linked user.
 // If the email matches an existing user, links the social account.
-// Otherwise creates a new user with an empty password.
+// Otherwise creates a new user and social account in a single transaction.
 func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, email, name, avatarURL string) (*models.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
-	// Check if social account already exists
+	// Some providers (e.g. Twitter) may not return an email address.
+	// Fail fast before attempting any DB lookup or creation.
+	if email == "" {
+		return nil, appErrors.NewAppError(422, messages.ErrOAuthMissingEmail)
+	}
+
+	// Check if social account already exists.
+	// Distinguish "not found" (normal case) from a real DB error.
 	socialAcct, err := s.socialAcctRepo.FindByProvider(ctx, provider, providerID)
-	if err == nil && socialAcct != nil {
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			slog.ErrorContext(ctx, "oauth: find social account", "provider", provider, "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		// ErrRecordNotFound — no linked account yet, continue below.
+	} else {
+		// Social account found — load and validate the linked user.
 		user, err := s.userRepo.FindByID(ctx, socialAcct.UserID)
 		if err != nil {
+			slog.ErrorContext(ctx, "oauth: find linked user", "user_id", socialAcct.UserID, "error", err)
 			return nil, appErrors.ErrInternalServerError
 		}
 		if user.Role == constants.RoleAdmin {
@@ -135,9 +151,10 @@ func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, emai
 		return user, nil
 	}
 
-	// Check if user with same email exists
+	// Check if a user with the same email already exists.
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.ErrorContext(ctx, "oauth: find user by email", "email", email, "error", err)
 		return nil, appErrors.ErrInternalServerError
 	}
 
@@ -151,38 +168,49 @@ func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, emai
 		case constants.StatusInactive:
 			return nil, ErrAccountInactive
 		}
-		// Link social account to existing user
+		// Link social account to the existing user.
 		if err := s.socialAcctRepo.Create(ctx, &models.SocialAccount{
 			UserID:     user.ID,
 			Provider:   provider,
 			ProviderID: providerID,
 		}); err != nil {
 			slog.ErrorContext(ctx, "oauth: link social account", "error", err)
+			return nil, appErrors.ErrInternalServerError
 		}
 		return user, nil
 	}
 
-	// Create new user
-	newUser := &models.User{
-		FullName:  name,
-		Email:     email,
-		AvatarURL: avatarURL,
-		Role:      constants.RoleUser,
-		Status:    constants.StatusActive,
-	}
-	if err := s.userRepo.Create(ctx, newUser); err != nil {
-		if appErrors.IsDuplicateEntryError(err) {
+	// Create a new user and social account in a single transaction so that
+	// a failure to persist the social account does not leave an orphaned user
+	// who can never log in via this provider again.
+	var newUser *models.User
+	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txUserRepo := repository.NewUserRepository(tx)
+		txSocialRepo := repository.NewSocialAccountRepository(tx)
+
+		newUser = &models.User{
+			FullName:  name,
+			Email:     email,
+			AvatarURL: avatarURL,
+			Role:      constants.RoleUser,
+			Status:    constants.StatusActive,
+		}
+		if err := txUserRepo.Create(ctx, newUser); err != nil {
+			return err
+		}
+
+		return txSocialRepo.Create(ctx, &models.SocialAccount{
+			UserID:     newUser.ID,
+			Provider:   provider,
+			ProviderID: providerID,
+		})
+	})
+	if txErr != nil {
+		if appErrors.IsDuplicateEntryError(txErr) {
 			return nil, appErrors.ErrEmailAlreadyTaken
 		}
+		slog.ErrorContext(ctx, "oauth: create user with social account", "error", txErr)
 		return nil, appErrors.ErrInternalServerError
-	}
-
-	if err := s.socialAcctRepo.Create(ctx, &models.SocialAccount{
-		UserID:     newUser.ID,
-		Provider:   provider,
-		ProviderID: providerID,
-	}); err != nil {
-		slog.ErrorContext(ctx, "oauth: create social account", "error", err)
 	}
 
 	return newUser, nil

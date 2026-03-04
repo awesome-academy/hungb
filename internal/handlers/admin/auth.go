@@ -27,10 +27,14 @@ func (h *AdminAuthHandler) LoginForm(c *gin.Context) {
 		c.Redirect(http.StatusFound, constants.RouteAdminDashboard)
 		return
 	}
-	c.HTML(http.StatusOK, "admin/pages/login.html", gin.H{
-		"title":      messages.TitleAdminLogin,
-		"csrf_token": middleware.CSRFToken(c),
-	})
+	flashSuccess, flashError := middleware.GetFlash(c)
+	data := gin.H{
+		"title":         messages.TitleAdminLogin,
+		"csrf_token":    middleware.CSRFToken(c),
+		"flash_success": flashSuccess,
+		"flash_error":   flashError,
+	}
+	c.HTML(http.StatusOK, "admin/pages/login.html", data)
 }
 
 func (h *AdminAuthHandler) Login(c *gin.Context) {

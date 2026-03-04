@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
 
-./server -migrate -seed || true
+./server -migrate -seed
 
 exec ./server

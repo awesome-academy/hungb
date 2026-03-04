@@ -23,14 +23,14 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	userRepo := repository.NewUserRepository(db)
 	socialAcctRepo := repository.NewSocialAccountRepository(db)
-	authService := services.NewAuthService(userRepo, socialAcctRepo)
+	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
 
-	setupPublicRoutes(router, authService, cfg, db)
+	setupPublicRoutes(router, db, authService, cfg)
 	setupAdminRoutes(router, db, authService)
 }
 
-func setupPublicRoutes(router *gin.Engine, authService *services.AuthService, cfg *config.Config, db *gorm.DB) {
-	authHandler := publicHandlers.NewAuthHandler(authService)
+func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config) {
+	authHandler := publicHandlers.NewAuthHandler(authService, cfg)
 
 	// Profile & Bank Account services
 	userRepo := repository.NewUserRepository(db)

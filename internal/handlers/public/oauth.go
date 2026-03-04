@@ -23,19 +23,30 @@ import (
 )
 
 type OAuthHandler struct {
-	authService *services.AuthService
+	authService         *services.AuthService
+	configuredProviders map[string]struct{}
 }
 
 func NewOAuthHandler(authService *services.AuthService, cfg *config.Config) *OAuthHandler {
-	initOAuthProviders(cfg)
-	return &OAuthHandler{authService: authService}
+	configured := initOAuthProviders(cfg)
+	return &OAuthHandler{authService: authService, configuredProviders: configured}
 }
 
-func initOAuthProviders(cfg *config.Config) {
+func initOAuthProviders(cfg *config.Config) map[string]struct{} {
 	// Gothic stores OAuth state in gorilla/sessions.
 	// Use the same secret as the app session for consistency.
 	gothic.Store = gsessions.NewCookieStore([]byte(cfg.SessionSecret))
+	if store, ok := gothic.Store.(*gsessions.CookieStore); ok {
+		store.Options = &gsessions.Options{
+			Path:     "/",
+			HttpOnly: true,
+			// Enable Secure flag only in production to allow local development over HTTP.
+			Secure:   cfg.GinMode == "release",
+			SameSite: http.SameSiteLaxMode,
+		}
+	}
 
+	configured := make(map[string]struct{})
 	var providers []goth.Provider
 
 	if cfg.GoogleClientID != "" && cfg.GoogleClientSecret != "" {
@@ -45,6 +56,7 @@ func initOAuthProviders(cfg *config.Config) {
 			cfg.BaseURL+"/auth/google/callback",
 			"email", "profile",
 		))
+		configured["google"] = struct{}{}
 	}
 
 	if cfg.FBClientID != "" && cfg.FBClientSecret != "" {
@@ -54,6 +66,7 @@ func initOAuthProviders(cfg *config.Config) {
 			cfg.BaseURL+"/auth/facebook/callback",
 			"email",
 		))
+		configured["facebook"] = struct{}{}
 	}
 
 	if cfg.TwitterAPIKey != "" && cfg.TwitterAPISecret != "" {
@@ -62,15 +75,26 @@ func initOAuthProviders(cfg *config.Config) {
 			cfg.TwitterAPISecret,
 			cfg.BaseURL+"/auth/twitterv2/callback",
 		))
+		configured["twitterv2"] = struct{}{}
 	}
 
 	if len(providers) > 0 {
 		goth.UseProviders(providers...)
 	}
+	return configured
 }
 
 func (h *OAuthHandler) Begin(c *gin.Context) {
 	provider := c.Param("provider")
+
+	// Reject requests for providers that are not configured to avoid
+	// sending users into a guaranteed-to-fail OAuth flow.
+	if _, ok := h.configuredProviders[provider]; !ok {
+		middleware.SetFlashError(c, messages.ErrOAuthUnsupported)
+		c.Redirect(http.StatusFound, constants.RouteLogin)
+		return
+	}
+
 	q := c.Request.URL.Query()
 	q.Set("provider", provider)
 	c.Request.URL.RawQuery = q.Encode()

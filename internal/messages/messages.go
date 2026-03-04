@@ -74,11 +74,13 @@ const (
 
 // ── OAuth
 const (
-	ErrOAuthBegin    = "Không thể bắt đầu đăng nhập mạng xã hội."
-	ErrOAuthCallback = "Đăng nhập mạng xã hội thất bại. Vui lòng thử lại."
-	ErrOAuthBanned   = "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên."
-	ErrOAuthInactive = "Tài khoản chưa được kích hoạt."
-	ErrOAuthAdmin    = "Tài khoản quản trị không thể đăng nhập bằng mạng xã hội."
+	ErrOAuthBegin        = "Không thể bắt đầu đăng nhập mạng xã hội."
+	ErrOAuthCallback     = "Đăng nhập mạng xã hội thất bại. Vui lòng thử lại."
+	ErrOAuthBanned       = "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên."
+	ErrOAuthInactive     = "Tài khoản chưa được kích hoạt."
+	ErrOAuthAdmin        = "Tài khoản quản trị không thể đăng nhập bằng mạng xã hội."
+	ErrOAuthMissingEmail = "Không thể lấy địa chỉ email từ nhà cung cấp. Vui lòng dùng phương thức đăng nhập khác."
+	ErrOAuthUnsupported  = "Nhà cung cấp đăng nhập không được hỗ trợ hoặc chưa được cấu hình."
 
 	MsgOAuthLoginSuccess = "Đăng nhập thành công! Chào mừng %s."
 
