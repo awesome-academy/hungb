@@ -22,6 +22,8 @@ type Config struct {
 
 	SessionSecret string
 
+	BaseURL string
+
 	GoogleClientID     string
 	GoogleClientSecret string
 	FBClientID         string
@@ -61,6 +63,8 @@ func LoadConfig() *Config {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		SessionSecret: getEnv("SESSION_SECRET", "change-me-in-production"),
+
+		BaseURL: getEnv("BASE_URL", "http://localhost:8080"),
 
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),

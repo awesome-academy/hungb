@@ -1,10 +1,6 @@
 {{define "_stats_card"}}
-<!--
-  Expects data map: {icon, label, value, color}
-  Called via: {{range .stats_cards}}{{template "_stats_card" .}}{{end}}
--->
 <div class="col">
-  <div class="card text-bg-{{.color}} shadow-sm h-100 border-0">
+  <div class="card {{.card_class}} shadow-sm h-100 border-0">
     <div class="card-body py-4">
       <div class="d-flex justify-content-between align-items-start">
         <div>

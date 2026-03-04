@@ -24,13 +24,11 @@ var (
 	ErrAccountInactive    = appErrors.NewAppError(403, messages.AuthErrAccountInactive)
 )
 
-// LoginForm holds data submitted from the public login form.
 type LoginForm struct {
 	Email    string `form:"email"    binding:"required,email"`
 	Password string `form:"password" binding:"required"`
 }
 
-// RegisterForm holds data submitted from the public registration form.
 type RegisterForm struct {
 	FullName        string `form:"full_name"        binding:"required,min=2"`
 	Email           string `form:"email"            binding:"required,email"`
@@ -39,11 +37,13 @@ type RegisterForm struct {
 }
 
 type AuthService struct {
-	userRepo repository.UserRepo
+	db             *gorm.DB
+	userRepo       repository.UserRepo
+	socialAcctRepo repository.SocialAccountRepo
 }
 
-func NewAuthService(userRepo repository.UserRepo) *AuthService {
-	return &AuthService{userRepo: userRepo}
+func NewAuthService(db *gorm.DB, userRepo repository.UserRepo, socialAcctRepo repository.SocialAccountRepo) *AuthService {
+	return &AuthService{db: db, userRepo: userRepo, socialAcctRepo: socialAcctRepo}
 }
 
 // Login verifies credentials and returns the authenticated user.
@@ -77,6 +77,143 @@ func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User,
 	}
 
 	return user, nil
+}
+
+// AdminLogin verifies credentials and ensures the user has admin role.
+func (s *AuthService) AdminLogin(ctx context.Context, form *LoginForm) (*models.User, error) {
+	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
+
+	user, err := s.userRepo.FindByEmail(ctx, form.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErrors.ErrInvalidCredentials
+		}
+		slog.ErrorContext(ctx, messages.LogAdminLoginFindUser, "email", form.Email, "error", err)
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
+		return nil, appErrors.ErrInvalidCredentials
+	}
+
+	if user.Role != constants.RoleAdmin {
+		return nil, appErrors.ErrForbidden
+	}
+
+	switch user.Status {
+	case constants.StatusBanned:
+		return nil, ErrAccountBanned
+	case constants.StatusInactive:
+		return nil, ErrAccountInactive
+	}
+
+	return user, nil
+}
+
+// OAuthLogin finds or creates a user from OAuth provider data.
+// If the social account exists, returns the linked user.
+// If the email matches an existing user, links the social account.
+// Otherwise creates a new user and social account in a single transaction.
+func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, email, name, avatarURL string) (*models.User, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+
+	// Some providers (e.g. Twitter) may not return an email address.
+	// Fail fast before attempting any DB lookup or creation.
+	if email == "" {
+		return nil, appErrors.NewAppError(422, messages.ErrOAuthMissingEmail)
+	}
+
+	// Check if social account already exists.
+	// Distinguish "not found" (normal case) from a real DB error.
+	socialAcct, err := s.socialAcctRepo.FindByProvider(ctx, provider, providerID)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			slog.ErrorContext(ctx, "oauth: find social account", "provider", provider, "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		// ErrRecordNotFound — no linked account yet, continue below.
+	} else {
+		// Social account found — load and validate the linked user.
+		user, err := s.userRepo.FindByID(ctx, socialAcct.UserID)
+		if err != nil {
+			slog.ErrorContext(ctx, "oauth: find linked user", "user_id", socialAcct.UserID, "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		if user.Role == constants.RoleAdmin {
+			return nil, ErrAdminMustUsePortal
+		}
+		switch user.Status {
+		case constants.StatusBanned:
+			return nil, ErrAccountBanned
+		case constants.StatusInactive:
+			return nil, ErrAccountInactive
+		}
+		return user, nil
+	}
+
+	// Check if a user with the same email already exists.
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.ErrorContext(ctx, "oauth: find user by email", "email", email, "error", err)
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	if user != nil {
+		if user.Role == constants.RoleAdmin {
+			return nil, ErrAdminMustUsePortal
+		}
+		switch user.Status {
+		case constants.StatusBanned:
+			return nil, ErrAccountBanned
+		case constants.StatusInactive:
+			return nil, ErrAccountInactive
+		}
+		// Link social account to the existing user.
+		if err := s.socialAcctRepo.Create(ctx, &models.SocialAccount{
+			UserID:     user.ID,
+			Provider:   provider,
+			ProviderID: providerID,
+		}); err != nil {
+			slog.ErrorContext(ctx, "oauth: link social account", "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		return user, nil
+	}
+
+	// Create a new user and social account in a single transaction so that
+	// a failure to persist the social account does not leave an orphaned user
+	// who can never log in via this provider again.
+	var newUser *models.User
+	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txUserRepo := repository.NewUserRepository(tx)
+		txSocialRepo := repository.NewSocialAccountRepository(tx)
+
+		newUser = &models.User{
+			FullName:  name,
+			Email:     email,
+			AvatarURL: avatarURL,
+			Role:      constants.RoleUser,
+			Status:    constants.StatusActive,
+		}
+		if err := txUserRepo.Create(ctx, newUser); err != nil {
+			return err
+		}
+
+		return txSocialRepo.Create(ctx, &models.SocialAccount{
+			UserID:     newUser.ID,
+			Provider:   provider,
+			ProviderID: providerID,
+		})
+	})
+	if txErr != nil {
+		if appErrors.IsDuplicateEntryError(txErr) {
+			return nil, appErrors.ErrEmailAlreadyTaken
+		}
+		slog.ErrorContext(ctx, "oauth: create user with social account", "error", txErr)
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	return newUser, nil
 }
 
 // Register validates form data, hashes the password, and creates a new user.

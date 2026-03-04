@@ -58,6 +58,37 @@ const (
 	TitleHome = "Trang chủ"
 )
 
+// ── Admin Auth
+const (
+	TitleAdminLogin = "Đăng nhập"
+
+	ErrAdminNoAccess        = "Bạn không có quyền truy cập trang admin."
+	ErrAdminAccountBanned   = "Tài khoản quản trị đã bị khóa."
+	ErrAdminAccountInactive = "Tài khoản quản trị chưa được kích hoạt."
+	ErrAdminInvalidCreds    = "Email hoặc mật khẩu không đúng."
+	ErrAdminCreateSession   = "Không thể tạo phiên đăng nhập. Vui lòng thử lại."
+
+	MsgAdminLoginWelcome = "Chào mừng %s!"
+	MsgAdminLogout       = "Bạn đã đăng xuất khỏi trang admin."
+)
+
+// ── OAuth
+const (
+	ErrOAuthBegin        = "Không thể bắt đầu đăng nhập mạng xã hội."
+	ErrOAuthCallback     = "Đăng nhập mạng xã hội thất bại. Vui lòng thử lại."
+	ErrOAuthBanned       = "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên."
+	ErrOAuthInactive     = "Tài khoản chưa được kích hoạt."
+	ErrOAuthAdmin        = "Tài khoản quản trị không thể đăng nhập bằng mạng xã hội."
+	ErrOAuthMissingEmail = "Không thể lấy địa chỉ email từ nhà cung cấp. Vui lòng dùng phương thức đăng nhập khác."
+	ErrOAuthUnsupported  = "Nhà cung cấp đăng nhập không được hỗ trợ hoặc chưa được cấu hình."
+
+	MsgOAuthLoginSuccess = "Đăng nhập thành công! Chào mừng %s."
+
+	LogOAuthBeginFailed    = "oauth: begin auth failed"
+	LogOAuthCallbackFailed = "oauth: complete auth failed"
+	LogOAuthLoginFailed    = "oauth: login/register failed"
+)
+
 // ── Admin dashboard
 const (
 	TitleAdminDashboard = "Dashboard"

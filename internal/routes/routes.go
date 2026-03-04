@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/constants"
 	adminHandlers "sun-booking-tours/internal/handlers/admin"
 	publicHandlers "sun-booking-tours/internal/handlers/public"
@@ -15,20 +16,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	router.GET("/health", healthCheck)
 
 	router.Use(middleware.LoadUser(db))
 
-	setupPublicRoutes(router, db)
-	setupAdminRoutes(router, db)
+	userRepo := repository.NewUserRepository(db)
+	socialAcctRepo := repository.NewSocialAccountRepository(db)
+	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
+
+	setupPublicRoutes(router, authService, cfg)
+	setupAdminRoutes(router, db, authService)
 }
 
-func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
-	// Wire public auth dependencies
-	userRepo := repository.NewUserRepository(db)
-	authService := services.NewAuthService(userRepo)
-	authHandler := publicHandlers.NewAuthHandler(authService)
+func setupPublicRoutes(router *gin.Engine, authService *services.AuthService, cfg *config.Config) {
+	authHandler := publicHandlers.NewAuthHandler(authService, cfg)
 
 	public := router.Group("/")
 	{
@@ -40,6 +42,14 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
 		public.POST("/logout", authHandler.Logout)
 	}
 
+	// OAuth routes (exempt from CSRF — provider handles security via state param)
+	oauthHandler := publicHandlers.NewOAuthHandler(authService, cfg)
+	oauth := router.Group("/auth")
+	{
+		oauth.GET("/:provider", oauthHandler.Begin)
+		oauth.GET("/:provider/callback", oauthHandler.Callback)
+	}
+
 	// Protected public routes (requires login)
 	auth := public.Group("/", middleware.RequireLogin())
 	{
@@ -47,16 +57,18 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB) {
 	}
 }
 
-func setupAdminRoutes(router *gin.Engine, db *gorm.DB) {
-	// Wire admin dependencies
+func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService) {
 	statsRepo := repository.NewStatsRepository(db)
 	statsService := services.NewStatsService(statsRepo)
 	dashboardHandler := adminHandlers.NewDashboardHandler(statsService)
+	adminAuthHandler := adminHandlers.NewAdminAuthHandler(authService)
 
 	admin := router.Group("/admin")
 	{
 		admin.GET("/", redirectToDashboard)
-		// TODO: admin login routes (no auth required)
+		admin.GET("/login", adminAuthHandler.LoginForm)
+		admin.POST("/login", adminAuthHandler.Login)
+		admin.POST("/logout", adminAuthHandler.Logout)
 	}
 
 	adminAuth := admin.Group("/", middleware.RequireAdmin())
