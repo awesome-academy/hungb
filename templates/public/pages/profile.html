@@ -1,0 +1,109 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-person-circle me-2"></i>Hồ sơ cá nhân</h2>
+        <a href="/profile/edit" class="btn btn-primary">
+          <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+        </a>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="row">
+            <div class="col-md-4 text-center mb-4 mb-md-0">
+              {{if .user.AvatarURL}}
+              <img src="{{.user.AvatarURL}}" alt="Avatar" class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
+              {{else}}
+              <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px; font-size: 3rem;">
+                <i class="bi bi-person-fill"></i>
+              </div>
+              {{end}}
+              <h5 class="fw-semibold mb-1">{{.user.FullName}}</h5>
+              <span class="badge bg-secondary">{{.user.Role}}</span>
+            </div>
+            <div class="col-md-8">
+              <table class="table table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <th class="text-muted ps-0" style="width: 40%;">
+                      <i class="bi bi-envelope me-2"></i>Email
+                    </th>
+                    <td>{{.user.Email}}</td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted ps-0">
+                      <i class="bi bi-telephone me-2"></i>Số điện thoại
+                    </th>
+                    <td>
+                      {{if .user.Phone}}
+                        {{.user.Phone}}
+                      {{else}}
+                        <span class="text-muted fst-italic">Chưa cập nhật</span>
+                      {{end}}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted ps-0">
+                      <i class="bi bi-shield-check me-2"></i>Trạng thái
+                    </th>
+                    <td>
+                      {{if eq .user.Status "active"}}
+                        <span class="badge bg-success">Hoạt động</span>
+                      {{else if eq .user.Status "inactive"}}
+                        <span class="badge bg-warning text-dark">Chưa kích hoạt</span>
+                      {{else}}
+                        <span class="badge bg-danger">Bị khóa</span>
+                      {{end}}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th class="text-muted ps-0">
+                      <i class="bi bi-calendar me-2"></i>Ngày tham gia
+                    </th>
+                    <td>{{.user.CreatedAt.Format "02/01/2006"}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <a href="/my/bookings" class="card shadow-sm border-0 text-decoration-none h-100">
+              <div class="card-body text-center py-4">
+                <i class="bi bi-suitcase fs-2 text-primary d-block mb-2"></i>
+                <span class="fw-semibold text-dark">Booking của tôi</span>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="/my/reviews" class="card shadow-sm border-0 text-decoration-none h-100">
+              <div class="card-body text-center py-4">
+                <i class="bi bi-star fs-2 text-warning d-block mb-2"></i>
+                <span class="fw-semibold text-dark">Đánh giá của tôi</span>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="/bank-accounts" class="card shadow-sm border-0 text-decoration-none h-100">
+              <div class="card-body text-center py-4">
+                <i class="bi bi-bank fs-2 text-success d-block mb-2"></i>
+                <span class="fw-semibold text-dark">Tài khoản ngân hàng</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}

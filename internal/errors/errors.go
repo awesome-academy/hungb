@@ -51,6 +51,23 @@ var (
 	ErrCategoryHasTours = NewAppError(http.StatusBadRequest, "category has associated tours")
 )
 
+// Bank Account
+var (
+	ErrBankAccountNotFound = NewAppError(http.StatusNotFound, "bank account not found")
+)
+
+// Bank Account error context (used in fmt.Errorf wrapping)
+const (
+	ErrCtxBankAccountFindByID     = "find bank account by id"
+	ErrCtxBankAccountFindByUser   = "find bank accounts by user"
+	ErrCtxBankAccountCount        = "count bank accounts"
+	ErrCtxBankAccountCreate       = "create bank account"
+	ErrCtxBankAccountUpdate       = "update bank account"
+	ErrCtxBankAccountDelete       = "delete bank account"
+	ErrCtxBankAccountClearDefault = "clear default bank accounts"
+	ErrCtxBankAccountSetDefault   = "set default bank account"
+)
+
 // Booking
 var (
 	ErrBookingNotFound  = NewAppError(http.StatusNotFound, "booking not found")

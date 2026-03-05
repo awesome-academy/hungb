@@ -19,6 +19,16 @@ const (
 )
 
 const (
+	RouteProfile     = "/profile"
+	RouteProfileEdit = "/profile/edit"
+)
+
+const (
+	RouteBankAccounts      = "/bank-accounts"
+	RouteBankAccountCreate = "/bank-accounts/create"
+)
+
+const (
 	RouteAdminRoot      = "/admin"
 	RouteAdminLogin     = "/admin/login"
 	RouteAdminLogout    = "/admin/logout"

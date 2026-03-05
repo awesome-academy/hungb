@@ -25,12 +25,20 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	socialAcctRepo := repository.NewSocialAccountRepository(db)
 	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
 
-	setupPublicRoutes(router, authService, cfg)
+	setupPublicRoutes(router, db, authService, cfg, userRepo)
 	setupAdminRoutes(router, db, authService)
 }
 
-func setupPublicRoutes(router *gin.Engine, authService *services.AuthService, cfg *config.Config) {
+func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config, userRepo repository.UserRepo) {
 	authHandler := publicHandlers.NewAuthHandler(authService, cfg)
+
+	// Profile & Bank Account services
+	profileService := services.NewProfileService(userRepo)
+	profileHandler := publicHandlers.NewProfileHandler(profileService)
+
+	bankAccountRepo := repository.NewBankAccountRepository(db)
+	bankAccountService := services.NewBankAccountService(db, bankAccountRepo)
+	bankAccountHandler := publicHandlers.NewBankAccountHandler(bankAccountService)
 
 	public := router.Group("/")
 	{
@@ -53,7 +61,17 @@ func setupPublicRoutes(router *gin.Engine, authService *services.AuthService, cf
 	// Protected public routes (requires login)
 	auth := public.Group("/", middleware.RequireLogin())
 	{
-		_ = auth // TODO: add protected public routes (profile, bookings, etc.)
+		auth.GET("/profile", profileHandler.Show)
+		auth.GET("/profile/edit", profileHandler.Edit)
+		auth.POST("/profile/edit", profileHandler.Update)
+
+		auth.GET("/bank-accounts", bankAccountHandler.List)
+		auth.GET("/bank-accounts/create", bankAccountHandler.CreateForm)
+		auth.POST("/bank-accounts/create", bankAccountHandler.Create)
+		auth.GET("/bank-accounts/:id/edit", bankAccountHandler.EditForm)
+		auth.POST("/bank-accounts/:id/edit", bankAccountHandler.Update)
+		auth.POST("/bank-accounts/:id/delete", bankAccountHandler.Delete)
+		auth.POST("/bank-accounts/:id/set-default", bankAccountHandler.SetDefault)
 	}
 }
 
