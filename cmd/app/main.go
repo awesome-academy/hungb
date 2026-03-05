@@ -161,7 +161,15 @@ func loadTemplates(baseDir string) render.HTMLRender {
 		// Avoid raw HTML helpers (e.g. safeHTML) unless the input is
 		// guaranteed to be sanitised — they disable auto-escaping
 		// and are an XSS vector if applied to user-controlled content.
-		t := template.New("").Funcs(template.FuncMap{})
+		t := template.New("").Funcs(template.FuncMap{
+			"add": func(a, b int) int { return a + b },
+			"derefUint": func(p *uint) uint {
+				if p == nil {
+					return 0
+				}
+				return *p
+			},
+		})
 
 		for _, sf := range sharedFiles {
 			sfRel, sfRelErr := filepath.Rel(baseDir, sf)

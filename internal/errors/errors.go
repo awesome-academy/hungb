@@ -56,6 +56,49 @@ var (
 	ErrBankAccountNotFound = NewAppError(http.StatusNotFound, "bank account not found")
 )
 
+const (
+	ErrCtxCategoryFindAll            = "find all categories"
+	ErrCtxCategoryFindAllParents     = "find parent categories"
+	ErrCtxCategoryFindByID           = "find category by id"
+	ErrCtxCategoryFindBySlug         = "find category by slug"
+	ErrCtxCategoryCheckSlugExists    = "check slug exists"
+	ErrCtxCategoryCheckSlugExcluding = "check slug exists excluding"
+	ErrCtxCategoryCreate             = "create category"
+	ErrCtxCategoryUpdate             = "update category"
+	ErrCtxCategoryDelete             = "delete category"
+	ErrCtxCategoryHasTours           = "check category has tours"
+	ErrCtxCategoryHasChildren        = "check category has children"
+	ErrCtxCategoryGetDescendantIDs   = "get descendant ids"
+)
+
+// Category Service error context (used in fmt.Errorf wrapping)
+const (
+	ErrCtxCategoryServiceListCategories       = "list categories"
+	ErrCtxCategoryServiceAllFlat              = "all flat categories"
+	ErrCtxCategoryServiceGetCategory          = "get category"
+	ErrCtxCategoryServiceCreateCheckSlug      = "create category check slug"
+	ErrCtxCategoryServiceCreate               = "create category"
+	ErrCtxCategoryServiceUpdateFindCategory   = "update category find"
+	ErrCtxCategoryServiceUpdateCheckSlug      = "update category check slug"
+	ErrCtxCategoryServiceUpdateGetDescendants = "update category get descendants"
+	ErrCtxCategoryServiceUpdate               = "update category"
+	ErrCtxCategoryServiceDeleteFindCategory   = "delete category find"
+	ErrCtxCategoryServiceDeleteCheckChildren  = "delete category check children"
+	ErrCtxCategoryServiceDeleteCheckTours     = "delete category check tours"
+	ErrCtxCategoryServiceDelete               = "delete category"
+)
+
+// Category Service validation error messages (user-facing)
+const (
+	ErrMsgCategoryNameRequired             = "Tên danh mục là bắt buộc."
+	ErrMsgCategoryNameDuplicate            = "Danh mục với tên tương tự đã tồn tại."
+	ErrMsgCategoryParentNotFound           = "Danh mục cha không tồn tại."
+	ErrMsgCategoryParentMustBeRoot         = "Chỉ hỗ trợ danh mục con cấp 2 (danh mục cha phải là cấp gốc)."
+	ErrMsgCategorySelfParent               = "Danh mục không thể là cha của chính nó."
+	ErrMsgCategoryChildAsParent            = "Không thể chọn danh mục con làm danh mục cha."
+	ErrMsgCategoryCannotDeleteWithChildren = "Không thể xóa danh mục có danh mục con. Hãy xóa danh mục con trước."
+)
+
 // Bank Account error context (used in fmt.Errorf wrapping)
 const (
 	ErrCtxBankAccountFindByID     = "find bank account by id"

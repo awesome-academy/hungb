@@ -46,6 +46,26 @@
         <li class="nav-item">
           <a class="nav-link" href="/tours">Tour</a>
         </li>
+        {{if .nav_categories}}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="categoryDropdown" role="button"
+             data-bs-toggle="dropdown" aria-expanded="false">
+            Danh mục
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="categoryDropdown">
+            {{range .nav_categories}}
+            <li><a class="dropdown-item fw-semibold" href="/tours?category={{.Slug}}">{{.Name}}</a></li>
+            {{if .Children}}
+            {{range .Children}}
+            <li><a class="dropdown-item ps-4" href="/tours?category={{.Slug}}">↳ {{.Name}}</a></li>
+            {{end}}
+            {{end}}
+            {{end}}
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item" href="/tours">Tất cả tour</a></li>
+          </ul>
+        </li>
+        {{end}}
         <li class="nav-item">
           <a class="nav-link" href="/reviews">Đánh giá</a>
         </li>
