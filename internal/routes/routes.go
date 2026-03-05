@@ -25,20 +25,19 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	socialAcctRepo := repository.NewSocialAccountRepository(db)
 	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
 
-	setupPublicRoutes(router, db, authService, cfg)
+	setupPublicRoutes(router, db, authService, cfg, userRepo)
 	setupAdminRoutes(router, db, authService)
 }
 
-func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config) {
+func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config, userRepo repository.UserRepo) {
 	authHandler := publicHandlers.NewAuthHandler(authService, cfg)
 
 	// Profile & Bank Account services
-	userRepo := repository.NewUserRepository(db)
 	profileService := services.NewProfileService(userRepo)
 	profileHandler := publicHandlers.NewProfileHandler(profileService)
 
 	bankAccountRepo := repository.NewBankAccountRepository(db)
-	bankAccountService := services.NewBankAccountService(bankAccountRepo)
+	bankAccountService := services.NewBankAccountService(db, bankAccountRepo)
 	bankAccountHandler := publicHandlers.NewBankAccountHandler(bankAccountService)
 
 	public := router.Group("/")

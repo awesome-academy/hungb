@@ -26,6 +26,17 @@ func NewBankAccountHandler(service *services.BankAccountService) *BankAccountHan
 	return &BankAccountHandler{service: service}
 }
 
+func (h *BankAccountHandler) getUserAndID(c *gin.Context) (*models.User, uint, bool) {
+	user := middleware.GetCurrentUser(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		middleware.SetFlashError(c, messages.ErrBankAccountNotFound)
+		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
+		return nil, 0, false
+	}
+	return user, uint(id), true
+}
+
 // List renders GET /bank-accounts.
 func (h *BankAccountHandler) List(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)
@@ -94,15 +105,12 @@ func (h *BankAccountHandler) Create(c *gin.Context) {
 
 // EditForm renders GET /bank-accounts/:id/edit.
 func (h *BankAccountHandler) EditForm(c *gin.Context) {
-	user := middleware.GetCurrentUser(c)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		middleware.SetFlashError(c, messages.ErrBankAccountNotFound)
-		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
+	user, id, ok := h.getUserAndID(c)
+	if !ok {
 		return
 	}
 
-	account, err := h.service.GetByID(c.Request.Context(), uint(id), user.ID)
+	account, err := h.service.GetByID(c.Request.Context(), id, user.ID)
 	if err != nil {
 		if appErrors.Is(err, appErrors.ErrForbidden) {
 			middleware.SetFlashError(c, messages.ErrBankAccountForbidden)
@@ -129,11 +137,8 @@ func (h *BankAccountHandler) EditForm(c *gin.Context) {
 
 // Update handles POST /bank-accounts/:id/edit.
 func (h *BankAccountHandler) Update(c *gin.Context) {
-	user := middleware.GetCurrentUser(c)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		middleware.SetFlashError(c, messages.ErrBankAccountNotFound)
-		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
+	user, id, ok := h.getUserAndID(c)
+	if !ok {
 		return
 	}
 
@@ -144,17 +149,19 @@ func (h *BankAccountHandler) Update(c *gin.Context) {
 			"user":       user,
 			"csrf_token": middleware.CSRFToken(c),
 			"is_edit":    true,
-			"account":    &models.BankAccount{ID: uint(id)},
+			"account":    &models.BankAccount{ID: id},
 			"errors":     translateBankAccountErrors(err),
 			"form":       form,
 		})
 		return
 	}
 
-	if err := h.service.Update(c.Request.Context(), uint(id), user.ID, &form); err != nil {
+	if err := h.service.Update(c.Request.Context(), id, user.ID, &form); err != nil {
 		errMsg := messages.ErrBankAccountUpdateFail
 		if appErrors.Is(err, appErrors.ErrForbidden) {
 			errMsg = messages.ErrBankAccountForbidden
+		} else if appErrors.Is(err, appErrors.ErrBankAccountNotFound) {
+			errMsg = messages.ErrBankAccountNotFound
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
@@ -167,18 +174,17 @@ func (h *BankAccountHandler) Update(c *gin.Context) {
 
 // Delete handles POST /bank-accounts/:id/delete.
 func (h *BankAccountHandler) Delete(c *gin.Context) {
-	user := middleware.GetCurrentUser(c)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		middleware.SetFlashError(c, messages.ErrBankAccountNotFound)
-		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
+	user, id, ok := h.getUserAndID(c)
+	if !ok {
 		return
 	}
 
-	if err := h.service.Delete(c.Request.Context(), uint(id), user.ID); err != nil {
+	if err := h.service.Delete(c.Request.Context(), id, user.ID); err != nil {
 		errMsg := messages.ErrBankAccountDeleteFail
 		if appErrors.Is(err, appErrors.ErrForbidden) {
 			errMsg = messages.ErrBankAccountForbidden
+		} else if appErrors.Is(err, appErrors.ErrBankAccountNotFound) {
+			errMsg = messages.ErrBankAccountNotFound
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
@@ -191,18 +197,17 @@ func (h *BankAccountHandler) Delete(c *gin.Context) {
 
 // SetDefault handles POST /bank-accounts/:id/set-default.
 func (h *BankAccountHandler) SetDefault(c *gin.Context) {
-	user := middleware.GetCurrentUser(c)
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		middleware.SetFlashError(c, messages.ErrBankAccountNotFound)
-		c.Redirect(http.StatusFound, constants.RouteBankAccounts)
+	user, id, ok := h.getUserAndID(c)
+	if !ok {
 		return
 	}
 
-	if err := h.service.SetDefault(c.Request.Context(), uint(id), user.ID); err != nil {
-		errMsg := messages.ErrBankAccountUpdateFail
+	if err := h.service.SetDefault(c.Request.Context(), id, user.ID); err != nil {
+		errMsg := messages.ErrBankAccountSetDefaultFail
 		if appErrors.Is(err, appErrors.ErrForbidden) {
 			errMsg = messages.ErrBankAccountForbidden
+		} else if appErrors.Is(err, appErrors.ErrBankAccountNotFound) {
+			errMsg = messages.ErrBankAccountNotFound
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteBankAccounts)

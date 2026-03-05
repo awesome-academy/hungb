@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
+	"sun-booking-tours/internal/constants"
 	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/services"
@@ -68,7 +69,7 @@ func (h *ProfileHandler) Update(c *gin.Context) {
 		return
 	}
 
-	updatedUser, err := h.profileService.UpdateProfile(c.Request.Context(), user.ID, &form)
+	_, err := h.profileService.UpdateProfile(c.Request.Context(), user.ID, &form)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "public/pages/profile_edit.html", gin.H{
 			"title":      messages.TitleProfileEdit,
@@ -80,11 +81,8 @@ func (h *ProfileHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Update the context user so navbar reflects changes immediately
-	c.Set("current_user", updatedUser)
-
 	middleware.SetFlashSuccess(c, messages.MsgProfileUpdateSuccess)
-	c.Redirect(http.StatusFound, "/profile")
+	c.Redirect(http.StatusFound, constants.RouteProfile)
 }
 
 // translateProfileErrors converts binding errors to Vietnamese messages.

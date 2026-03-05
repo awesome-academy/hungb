@@ -134,11 +134,12 @@ const (
 	MsgBankAccountDeleted    = "Xóa tài khoản ngân hàng thành công."
 	MsgBankAccountSetDefault = "Đã đặt tài khoản mặc định."
 
-	ErrBankAccountNotFound   = "Tài khoản ngân hàng không tồn tại."
-	ErrBankAccountForbidden  = "Bạn không có quyền thao tác tài khoản này."
-	ErrBankAccountCreateFail = "Không thể thêm tài khoản ngân hàng."
-	ErrBankAccountUpdateFail = "Không thể cập nhật tài khoản ngân hàng."
-	ErrBankAccountDeleteFail = "Không thể xóa tài khoản ngân hàng."
+	ErrBankAccountNotFound       = "Tài khoản ngân hàng không tồn tại."
+	ErrBankAccountForbidden      = "Bạn không có quyền thao tác tài khoản này."
+	ErrBankAccountCreateFail     = "Không thể thêm tài khoản ngân hàng."
+	ErrBankAccountUpdateFail     = "Không thể cập nhật tài khoản ngân hàng."
+	ErrBankAccountDeleteFail     = "Không thể xóa tài khoản ngân hàng."
+	ErrBankAccountSetDefaultFail = "Không thể đặt tài khoản mặc định."
 
 	LogBankAccountLoadFailed       = "bank_account: load failed"
 	LogBankAccountCreateFailed     = "bank_account: create failed"
