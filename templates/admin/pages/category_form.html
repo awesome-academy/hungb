@@ -1,0 +1,66 @@
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">
+    <i class="bi bi-folder-plus me-2"></i>{{.title}}
+  </h2>
+  <a href="/admin/categories" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST" action="{{.form_url}}">
+      <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+      <div class="mb-3">
+        <label for="name" class="form-label">Tên danh mục <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="form-control"
+          id="name"
+          name="name"
+          maxlength="255"
+          required
+          placeholder="Ví dụ: Du lịch biển"
+          value="{{if .is_edit}}{{.category.Name}}{{end}}"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Mô tả</label>
+        <textarea
+          class="form-control"
+          id="description"
+          name="description"
+          rows="3"
+          placeholder="Mô tả ngắn về danh mục..."
+        >{{if .is_edit}}{{.category.Description}}{{end}}</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label for="parent_id" class="form-label">Danh mục cha</label>
+        <select class="form-select" id="parent_id" name="parent_id">
+          <option value="0">— Không (danh mục gốc) —</option>
+          {{range .parents}}
+          <option value="{{.ID}}"
+            {{if $.is_edit}}{{if $.category.ParentID}}{{if eq .ID (derefUint $.category.ParentID)}}selected{{end}}{{end}}{{end}}
+          >{{.Name}}</option>
+          {{end}}
+        </select>
+        <div class="form-text">Chọn danh mục cha nếu muốn tạo danh mục con (tối đa 2 cấp).</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>
+          {{if .is_edit}}Cập nhật{{else}}Thêm mới{{end}}
+        </button>
+        <a href="/admin/categories" class="btn btn-outline-secondary">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+{{end}}
+
+{{template "admin_base" .}}
