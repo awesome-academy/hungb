@@ -58,11 +58,9 @@
         </tr>
       </thead>
       <tbody>
-        {{$page := .page}}
-        {{$limit := .filter.Limit}}
         {{range $idx, $tour := .tours}}
         <tr>
-          <td class="text-muted">{{add (add $idx 1) (add (add $page -1) (add $limit -$limit))}}</td>
+          <td class="text-muted">{{add $idx 1}}</td>
           <td>
             <strong>{{$tour.Title}}</strong>
             {{range $tour.Categories}}

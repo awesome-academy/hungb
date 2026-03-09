@@ -26,7 +26,7 @@ func NewScheduleHandler(service *services.ScheduleService, tourService *services
 }
 
 func (h *ScheduleHandler) List(c *gin.Context) {
-	tourID, err := strconv.ParseUint(c.Param("tour_id"), 10, 64)
+	tourID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "admin/pages/error.html", gin.H{
 			"status":  400,
@@ -71,7 +71,7 @@ func (h *ScheduleHandler) List(c *gin.Context) {
 }
 
 func (h *ScheduleHandler) CreateForm(c *gin.Context) {
-	tourID, err := strconv.ParseUint(c.Param("tour_id"), 10, 64)
+	tourID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "admin/pages/error.html", gin.H{
 			"status":  400,
@@ -107,7 +107,7 @@ func (h *ScheduleHandler) CreateForm(c *gin.Context) {
 }
 
 func (h *ScheduleHandler) Create(c *gin.Context) {
-	tourID, err := strconv.ParseUint(c.Param("tour_id"), 10, 64)
+	tourID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "admin/pages/error.html", gin.H{
 			"status":  400,

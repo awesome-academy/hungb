@@ -120,9 +120,9 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.POST("/tours/:id/edit", tourHandler.Update)
 		adminAuth.POST("/tours/:id/delete", tourHandler.Delete)
 
-		adminAuth.GET("/tours/:tour_id/schedules", scheduleHandler.List)
-		adminAuth.GET("/tours/:tour_id/schedules/create", scheduleHandler.CreateForm)
-		adminAuth.POST("/tours/:tour_id/schedules/create", scheduleHandler.Create)
+		adminAuth.GET("/tours/:id/schedules", scheduleHandler.List)
+		adminAuth.GET("/tours/:id/schedules/create", scheduleHandler.CreateForm)
+		adminAuth.POST("/tours/:id/schedules/create", scheduleHandler.Create)
 		adminAuth.GET("/schedules/:id/edit", scheduleHandler.EditForm)
 		adminAuth.POST("/schedules/:id/edit", scheduleHandler.Update)
 		adminAuth.POST("/schedules/:id/delete", scheduleHandler.Delete)
