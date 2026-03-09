@@ -41,8 +41,78 @@ var (
 
 // Tour
 var (
-	ErrTourNotFound     = NewAppError(http.StatusNotFound, "tour not found")
-	ErrTourNotAvailable = NewAppError(http.StatusBadRequest, "tour is not available")
+	ErrTourNotFound        = NewAppError(http.StatusNotFound, "tour not found")
+	ErrTourNotAvailable    = NewAppError(http.StatusBadRequest, "tour is not available")
+	ErrTourHasBookings     = NewAppError(http.StatusBadRequest, "tour has active bookings")
+	ErrScheduleNotFound    = NewAppError(http.StatusNotFound, "schedule not found")
+	ErrScheduleHasBookings = NewAppError(http.StatusBadRequest, "schedule has bookings")
+)
+
+const (
+	ErrCtxTourFindAll            = "find all tours"
+	ErrCtxTourCount              = "count tours"
+	ErrCtxTourFindByID           = "find tour by id"
+	ErrCtxTourFindBySlug         = "find tour by slug"
+	ErrCtxTourCheckSlugExists    = "check tour slug exists"
+	ErrCtxTourCheckSlugExcluding = "check tour slug exists excluding"
+	ErrCtxTourCreate             = "create tour"
+	ErrCtxTourUpdate             = "update tour"
+	ErrCtxTourDelete             = "delete tour"
+	ErrCtxTourHasActiveBookings  = "check tour has active bookings"
+	ErrCtxTourReplaceCategories  = "replace tour categories"
+)
+
+const (
+	ErrCtxTourServiceList             = "list tours"
+	ErrCtxTourServiceGet              = "get tour"
+	ErrCtxTourServiceCreateCheckSlug  = "create tour check slug"
+	ErrCtxTourServiceCreate           = "create tour"
+	ErrCtxTourServiceUpdateFind       = "update tour find"
+	ErrCtxTourServiceUpdateCheckSlug  = "update tour check slug"
+	ErrCtxTourServiceUpdate           = "update tour"
+	ErrCtxTourServiceDeleteFind       = "delete tour find"
+	ErrCtxTourServiceDeleteCheckBooks = "delete tour check bookings"
+	ErrCtxTourServiceDelete           = "delete tour"
+)
+
+const (
+	ErrMsgTourTitleRequired       = "Tên tour là bắt buộc."
+	ErrMsgTourTitleDuplicate      = "Tour với tên tương tự đã tồn tại."
+	ErrMsgTourPricePositive       = "Giá tour phải lớn hơn 0."
+	ErrMsgTourDurationPositive    = "Số ngày tour phải lớn hơn 0."
+	ErrMsgTourMaxParticipants     = "Số người tham gia tối đa phải lớn hơn 0."
+	ErrMsgTourInvalidStatus       = "Trạng thái tour không hợp lệ."
+	ErrMsgTourCannotDeleteBooking = "Không thể xóa tour đang có booking."
+)
+
+const (
+	ErrCtxScheduleFindByTour  = "find schedules by tour"
+	ErrCtxScheduleFindByID    = "find schedule by id"
+	ErrCtxScheduleCreate      = "create schedule"
+	ErrCtxScheduleUpdate      = "update schedule"
+	ErrCtxScheduleDelete      = "delete schedule"
+	ErrCtxScheduleHasBookings = "check schedule has bookings"
+)
+
+const (
+	ErrCtxScheduleServiceList        = "list schedules"
+	ErrCtxScheduleServiceGet         = "get schedule"
+	ErrCtxScheduleServiceCreate      = "create schedule"
+	ErrCtxScheduleServiceUpdateFind  = "update schedule find"
+	ErrCtxScheduleServiceUpdate      = "update schedule"
+	ErrCtxScheduleServiceDeleteFind  = "delete schedule find"
+	ErrCtxScheduleServiceDeleteCheck = "delete schedule check bookings"
+	ErrCtxScheduleServiceDelete      = "delete schedule"
+)
+
+const (
+	ErrMsgScheduleReturnAfterDepart   = "Ngày về phải sau ngày khởi hành."
+	ErrMsgScheduleSlotsPositive       = "Số chỗ phải lớn hơn 0."
+	ErrMsgScheduleInvalidStatus       = "Trạng thái lịch trình không hợp lệ."
+	ErrMsgScheduleCannotDeleteBooking = "Không thể xóa lịch trình đang có booking."
+	ErrMsgScheduleTourNotFound        = "Tour không tồn tại."
+	ErrMsgScheduleDepartureDateReq    = "Ngày khởi hành là bắt buộc."
+	ErrMsgScheduleReturnDateReq       = "Ngày về là bắt buộc."
 )
 
 // Category

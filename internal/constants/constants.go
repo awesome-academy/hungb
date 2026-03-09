@@ -38,3 +38,38 @@ const (
 	RouteAdminCategoryEdit   = "/admin/categories/%d/edit"
 	RouteAdminCategoryDelete = "/admin/categories/%d/delete"
 )
+
+const (
+	RouteAdminTours      = "/admin/tours"
+	RouteAdminTourCreate = "/admin/tours/create"
+	RouteAdminTourEdit   = "/admin/tours/%d/edit"
+	RouteAdminTourDelete = "/admin/tours/%d/delete"
+)
+
+const (
+	RouteAdminTourSchedules      = "/admin/tours/%d/schedules"
+	RouteAdminTourScheduleCreate = "/admin/tours/%d/schedules/create"
+	RouteAdminScheduleEdit       = "/admin/schedules/%d/edit"
+	RouteAdminScheduleDelete     = "/admin/schedules/%d/delete"
+)
+
+const (
+	TourStatusDraft    = "draft"
+	TourStatusActive   = "active"
+	TourStatusInactive = "inactive"
+)
+
+const (
+	ScheduleStatusOpen      = "open"
+	ScheduleStatusFull      = "full"
+	ScheduleStatusCancelled = "cancelled"
+)
+
+const (
+	BookingStatusPending   = "pending"
+	BookingStatusConfirmed = "confirmed"
+	BookingStatusCancelled = "cancelled"
+	BookingStatusCompleted = "completed"
+)
+
+const DefaultPageLimit = 10

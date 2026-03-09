@@ -86,6 +86,14 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 	categoryService := services.NewCategoryService(catRepo)
 	categoryHandler := adminHandlers.NewCategoryHandler(categoryService)
 
+	tourRepo := repository.NewTourRepository(db)
+	tourService := services.NewTourService(tourRepo, catRepo)
+	tourHandler := adminHandlers.NewTourHandler(tourService, categoryService)
+
+	scheduleRepo := repository.NewScheduleRepository(db)
+	scheduleService := services.NewScheduleService(scheduleRepo, tourRepo)
+	scheduleHandler := adminHandlers.NewScheduleHandler(scheduleService, tourService)
+
 	admin := router.Group("/admin")
 	{
 		admin.GET("/", redirectToDashboard)
@@ -104,6 +112,20 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.GET("/categories/:id/edit", categoryHandler.EditForm)
 		adminAuth.POST("/categories/:id/edit", categoryHandler.Update)
 		adminAuth.POST("/categories/:id/delete", categoryHandler.Delete)
+
+		adminAuth.GET("/tours", tourHandler.List)
+		adminAuth.GET("/tours/create", tourHandler.CreateForm)
+		adminAuth.POST("/tours/create", tourHandler.Create)
+		adminAuth.GET("/tours/:id/edit", tourHandler.EditForm)
+		adminAuth.POST("/tours/:id/edit", tourHandler.Update)
+		adminAuth.POST("/tours/:id/delete", tourHandler.Delete)
+
+		adminAuth.GET("/tours/:tour_id/schedules", scheduleHandler.List)
+		adminAuth.GET("/tours/:tour_id/schedules/create", scheduleHandler.CreateForm)
+		adminAuth.POST("/tours/:tour_id/schedules/create", scheduleHandler.Create)
+		adminAuth.GET("/schedules/:id/edit", scheduleHandler.EditForm)
+		adminAuth.POST("/schedules/:id/edit", scheduleHandler.Update)
+		adminAuth.POST("/schedules/:id/delete", scheduleHandler.Delete)
 	}
 }
 
