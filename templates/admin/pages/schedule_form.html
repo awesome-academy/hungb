@@ -1,0 +1,81 @@
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-0">
+      <i class="bi bi-calendar-event me-2"></i>{{.title}}
+    </h2>
+    <p class="text-muted mb-0 mt-1">Tour: <strong>{{.tour.Title}}</strong></p>
+  </div>
+  <a href="/admin/tours/{{.tour.ID}}/schedules" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST" action="{{.form_url}}">
+      <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="departure_date" class="form-label">Ngày khởi hành <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="departure_date" name="departure_date"
+                   required
+                   value="{{if .is_edit}}{{formatDateInput .schedule.DepartureDate}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="return_date" class="form-label">Ngày về <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="return_date" name="return_date"
+                   required
+                   value="{{if .is_edit}}{{formatDateInput .schedule.ReturnDate}}{{end}}" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="available_slots" class="form-label">Số chỗ <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="available_slots" name="available_slots"
+                   min="1" required
+                   placeholder="20"
+                   value="{{if .is_edit}}{{.schedule.AvailableSlots}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="price_override" class="form-label">Giá riêng (VNĐ)</label>
+            <input type="text" inputmode="numeric" class="form-control" id="price_override" name="price_override"
+                   placeholder="Để trống nếu dùng giá tour"
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   value="{{if .is_edit}}{{formatPriceInputPtr .schedule.PriceOverride}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="status" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+            <select class="form-select" id="status" name="status" required>
+              <option value="open" {{if .is_edit}}{{if eq .schedule.Status "open"}}selected{{end}}{{end}}>Mở</option>
+              <option value="full" {{if .is_edit}}{{if eq .schedule.Status "full"}}selected{{end}}{{end}}>Đầy</option>
+              <option value="cancelled" {{if .is_edit}}{{if eq .schedule.Status "cancelled"}}selected{{end}}{{end}}>Đã hủy</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>
+          {{if .is_edit}}Cập nhật{{else}}Thêm mới{{end}}
+        </button>
+        <a href="/admin/tours/{{.tour.ID}}/schedules" class="btn btn-outline-secondary">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+{{end}}
+
+{{template "admin_base" .}}

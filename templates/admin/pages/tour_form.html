@@ -1,0 +1,151 @@
+{{define "content"}}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">
+    <i class="bi bi-map me-2"></i>{{.title}}
+  </h2>
+  <a href="/admin/tours" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST" action="{{.form_url}}">
+      <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+      <div class="row">
+        <div class="col-md-8">
+          <div class="mb-3">
+            <label for="title" class="form-label">Tên tour <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title"
+                   maxlength="500" required
+                   placeholder="Ví dụ: Du lịch Đà Nẵng 3 ngày 2 đêm"
+                   value="{{if .is_edit}}{{.tour.Title}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="status" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+            <select class="form-select" id="status" name="status" required>
+              <option value="draft" {{if .is_edit}}{{if eq .tour.Status "draft"}}selected{{end}}{{end}}>Nháp</option>
+              <option value="active" {{if .is_edit}}{{if eq .tour.Status "active"}}selected{{end}}{{end}}>Hoạt động</option>
+              <option value="inactive" {{if .is_edit}}{{if eq .tour.Status "inactive"}}selected{{end}}{{end}}>Ngừng</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Mô tả</label>
+        <textarea class="form-control" id="description" name="description"
+                  rows="4" placeholder="Mô tả chi tiết về tour...">{{if .is_edit}}{{.tour.Description}}{{end}}</textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="price" class="form-label">Giá (VNĐ) <span class="text-danger">*</span></label>
+            <input type="text" inputmode="numeric" class="form-control" id="price" name="price"
+                   required
+                   placeholder="1000000"
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   value="{{if .is_edit}}{{formatPriceInput .tour.Price}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="duration_days" class="form-label">Số ngày <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="duration_days" name="duration_days"
+                   min="1" required
+                   placeholder="3"
+                   value="{{if .is_edit}}{{.tour.DurationDays}}{{end}}" />
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="max_participants" class="form-label">Số người tối đa <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="max_participants" name="max_participants"
+                   min="1" required
+                   placeholder="20"
+                   value="{{if .is_edit}}{{.tour.MaxParticipants}}{{end}}" />
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="location" class="form-label">Địa điểm</label>
+        <input type="text" class="form-control" id="location" name="location"
+               maxlength="500"
+               placeholder="Ví dụ: Đà Nẵng, Hội An"
+               value="{{if .is_edit}}{{.tour.Location}}{{end}}" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Danh mục</label>
+        <div class="row">
+          {{range .categories}}
+          <div class="col-md-4 col-lg-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="category_ids"
+                     value="{{.ID}}" id="cat_{{.ID}}"
+                     {{if $.is_edit}}{{if containsUint $.selected_cat_ids .ID}}checked{{end}}{{end}} />
+              <label class="form-check-label" for="cat_{{.ID}}">{{.Name}}</label>
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Hình ảnh (URL)</label>
+        <div id="image-list">
+          {{if and .is_edit .image_urls}}
+            {{range .image_urls}}
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" name="image_urls"
+                     placeholder="https://example.com/image.jpg"
+                     value="{{.}}" />
+              <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            {{end}}
+          {{else}}
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" name="image_urls"
+                     placeholder="https://example.com/image.jpg" />
+              <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          {{end}}
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addImageField()">
+          <i class="bi bi-plus-lg me-1"></i>Thêm hình ảnh
+        </button>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>
+          {{if .is_edit}}Cập nhật{{else}}Thêm mới{{end}}
+        </button>
+        <a href="/admin/tours" class="btn btn-outline-secondary">Hủy</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function addImageField() {
+  var list = document.getElementById('image-list');
+  var div = document.createElement('div');
+  div.className = 'input-group mb-2';
+  div.innerHTML = '<input type="text" class="form-control" name="image_urls" placeholder="https://example.com/image.jpg" />' +
+    '<button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()"><i class="bi bi-x-lg"></i></button>';
+  list.appendChild(div);
+}
+</script>
+{{end}}
+
+{{template "admin_base" .}}

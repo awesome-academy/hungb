@@ -132,6 +132,46 @@ const (
 	LogAdminCategoryDeleteFailed = "admin: delete category failed"
 )
 
+const (
+	TitleAdminTours      = "Quản lý tour"
+	TitleAdminTourCreate = "Thêm tour mới"
+	TitleAdminTourEdit   = "Chỉnh sửa tour"
+
+	MsgAdminTourCreated = "Thêm tour thành công."
+	MsgAdminTourUpdated = "Cập nhật tour thành công."
+	MsgAdminTourDeleted = "Xóa tour thành công."
+
+	ErrAdminTourNotFound   = "Không tìm thấy tour."
+	ErrAdminTourCreateFail = "Không thể thêm tour."
+	ErrAdminTourUpdateFail = "Không thể cập nhật tour."
+	ErrAdminTourDeleteFail = "Không thể xóa tour."
+
+	LogAdminTourListFailed   = "admin: list tours failed"
+	LogAdminTourCreateFailed = "admin: create tour failed"
+	LogAdminTourUpdateFailed = "admin: update tour failed"
+	LogAdminTourDeleteFailed = "admin: delete tour failed"
+)
+
+const (
+	TitleAdminSchedules      = "Quản lý lịch trình"
+	TitleAdminScheduleCreate = "Thêm lịch trình"
+	TitleAdminScheduleEdit   = "Chỉnh sửa lịch trình"
+
+	MsgAdminScheduleCreated = "Thêm lịch trình thành công."
+	MsgAdminScheduleUpdated = "Cập nhật lịch trình thành công."
+	MsgAdminScheduleDeleted = "Xóa lịch trình thành công."
+
+	ErrAdminScheduleNotFound   = "Không tìm thấy lịch trình."
+	ErrAdminScheduleCreateFail = "Không thể thêm lịch trình."
+	ErrAdminScheduleUpdateFail = "Không thể cập nhật lịch trình."
+	ErrAdminScheduleDeleteFail = "Không thể xóa lịch trình."
+
+	LogAdminScheduleListFailed   = "admin: list schedules failed"
+	LogAdminScheduleCreateFailed = "admin: create schedule failed"
+	LogAdminScheduleUpdateFailed = "admin: update schedule failed"
+	LogAdminScheduleDeleteFailed = "admin: delete schedule failed"
+)
+
 // ── Profile
 const (
 	TitleProfile     = "Hồ sơ cá nhân"

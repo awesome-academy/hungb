@@ -1,12 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"html/template"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"sun-booking-tours/internal/config"
 	"sun-booking-tours/internal/database"
@@ -168,6 +173,77 @@ func loadTemplates(baseDir string) render.HTMLRender {
 					return 0
 				}
 				return *p
+			},
+			"formatPrice": func(p float64) string {
+				whole := int64(math.Round(p))
+				s := fmt.Sprintf("%d", whole)
+				n := len(s)
+				if n <= 3 {
+					return s + " ₫"
+				}
+				var parts []string
+				for n > 0 {
+					end := n
+					start := n - 3
+					if start < 0 {
+						start = 0
+					}
+					parts = append([]string{s[start:end]}, parts...)
+					n = start
+				}
+				return strings.Join(parts, ".") + " ₫"
+			},
+			"formatDate": func(t time.Time) string {
+				return t.Format("02/01/2006")
+			},
+			"formatDateInput": func(t time.Time) string {
+				return t.Format("2006-01-02")
+			},
+			"seq": func(n int) []int {
+				s := make([]int, n)
+				for i := range s {
+					s[i] = i + 1
+				}
+				return s
+			},
+			"jsonArray": func(data any) []string {
+				var raw []byte
+				switch v := data.(type) {
+				case json.RawMessage:
+					raw = v
+				case []byte:
+					raw = v
+				default:
+					return nil
+				}
+				var arr []string
+				if err := json.Unmarshal(raw, &arr); err != nil {
+					return nil
+				}
+				return arr
+			},
+			"derefFloat": func(p *float64) float64 {
+				if p == nil {
+					return 0
+				}
+				return *p
+			},
+			"formatPriceInput": func(p float64) string {
+				return strconv.FormatFloat(p, 'f', -1, 64)
+			},
+			"formatPriceInputPtr": func(p *float64) string {
+				if p == nil {
+					return ""
+				}
+				return strconv.FormatFloat(*p, 'f', -1, 64)
+			},
+			"containsUint": func(slice []uint, val uint) bool {
+				for _, v := range slice {
+					if v == val {
+						return true
+					}
+				}
+				return false
 			},
 		})
 
