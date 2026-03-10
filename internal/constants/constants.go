@@ -19,6 +19,10 @@ const (
 )
 
 const (
+	RoutePublicTours = "/tours"
+)
+
+const (
 	RouteProfile     = "/profile"
 	RouteProfileEdit = "/profile/edit"
 )

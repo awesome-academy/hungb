@@ -97,6 +97,12 @@ const (
 )
 
 const (
+	ErrCtxPublicTourFindBySlug   = "public find tour by slug"
+	ErrCtxPublicTourCountRatings = "public count tour ratings"
+	ErrCtxPublicTourDetail       = "public get tour detail"
+)
+
+const (
 	ErrCtxScheduleServiceList        = "list schedules"
 	ErrCtxScheduleServiceGet         = "get schedule"
 	ErrCtxScheduleServiceCreate      = "create schedule"
