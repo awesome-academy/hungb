@@ -63,16 +63,17 @@ const (
 )
 
 const (
-	ErrCtxTourServiceList             = "list tours"
-	ErrCtxTourServiceGet              = "get tour"
-	ErrCtxTourServiceCreateCheckSlug  = "create tour check slug"
-	ErrCtxTourServiceCreate           = "create tour"
-	ErrCtxTourServiceUpdateFind       = "update tour find"
-	ErrCtxTourServiceUpdateCheckSlug  = "update tour check slug"
-	ErrCtxTourServiceUpdate           = "update tour"
-	ErrCtxTourServiceDeleteFind       = "delete tour find"
-	ErrCtxTourServiceDeleteCheckBooks = "delete tour check bookings"
-	ErrCtxTourServiceDelete           = "delete tour"
+	ErrCtxTourServiceList               = "list tours"
+	ErrCtxTourServiceGet                = "get tour"
+	ErrCtxTourServiceCreateCheckSlug    = "create tour check slug"
+	ErrCtxTourServiceCreate             = "create tour"
+	ErrCtxTourServiceUpdateFind         = "update tour find"
+	ErrCtxTourServiceUpdateCheckSlug    = "update tour check slug"
+	ErrCtxTourServiceUpdate             = "update tour"
+	ErrCtxTourServiceDeleteFind         = "delete tour find"
+	ErrCtxTourServiceDeleteCheckBooks   = "delete tour check bookings"
+	ErrCtxTourServiceDelete             = "delete tour"
+	ErrCtxTourServiceValidateCategories = "validate category ids"
 )
 
 const (
@@ -83,6 +84,7 @@ const (
 	ErrMsgTourMaxParticipants     = "Số người tham gia tối đa phải lớn hơn 0."
 	ErrMsgTourInvalidStatus       = "Trạng thái tour không hợp lệ."
 	ErrMsgTourCannotDeleteBooking = "Không thể xóa tour đang có booking."
+	ErrMsgTourCategoryNotFound    = "Một hoặc nhiều danh mục không tồn tại."
 )
 
 const (
@@ -106,13 +108,14 @@ const (
 )
 
 const (
-	ErrMsgScheduleReturnAfterDepart   = "Ngày về phải sau ngày khởi hành."
-	ErrMsgScheduleSlotsPositive       = "Số chỗ phải lớn hơn 0."
-	ErrMsgScheduleInvalidStatus       = "Trạng thái lịch trình không hợp lệ."
-	ErrMsgScheduleCannotDeleteBooking = "Không thể xóa lịch trình đang có booking."
-	ErrMsgScheduleTourNotFound        = "Tour không tồn tại."
-	ErrMsgScheduleDepartureDateReq    = "Ngày khởi hành là bắt buộc."
-	ErrMsgScheduleReturnDateReq       = "Ngày về là bắt buộc."
+	ErrMsgScheduleReturnNotBeforeDepart = "Ngày về không được trước ngày khởi hành."
+	ErrMsgSchedulePriceOverridePositive = "Giá ghi đè phải lớn hơn 0."
+	ErrMsgScheduleSlotsPositive         = "Số chỗ phải lớn hơn 0."
+	ErrMsgScheduleInvalidStatus         = "Trạng thái lịch trình không hợp lệ."
+	ErrMsgScheduleCannotDeleteBooking   = "Không thể xóa lịch trình đang có booking."
+	ErrMsgScheduleTourNotFound          = "Tour không tồn tại."
+	ErrMsgScheduleDepartureDateReq      = "Ngày khởi hành là bắt buộc."
+	ErrMsgScheduleReturnDateReq         = "Ngày về là bắt buộc."
 )
 
 // Category
@@ -139,6 +142,7 @@ const (
 	ErrCtxCategoryHasTours           = "check category has tours"
 	ErrCtxCategoryHasChildren        = "check category has children"
 	ErrCtxCategoryGetDescendantIDs   = "get descendant ids"
+	ErrCtxCategoryCountByIDs         = "count categories by ids"
 )
 
 // Category Service error context (used in fmt.Errorf wrapping)

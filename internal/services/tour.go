@@ -96,6 +96,9 @@ func (s *TourService) CreateTour(ctx context.Context, form *TourForm) error {
 	}
 
 	if len(form.CategoryIDs) > 0 {
+		if err := s.validateCategoryIDs(ctx, form.CategoryIDs); err != nil {
+			return err
+		}
 		cats := make([]models.Category, len(form.CategoryIDs))
 		for i, cid := range form.CategoryIDs {
 			cats[i] = models.Category{ID: cid}
@@ -152,6 +155,11 @@ func (s *TourService) UpdateTour(ctx context.Context, id uint, form *TourForm) e
 		return fmt.Errorf("%s: %w", appErrors.ErrCtxTourServiceUpdate, err)
 	}
 
+	if len(form.CategoryIDs) > 0 {
+		if err := s.validateCategoryIDs(ctx, form.CategoryIDs); err != nil {
+			return err
+		}
+	}
 	cats := make([]models.Category, len(form.CategoryIDs))
 	for i, cid := range form.CategoryIDs {
 		cats[i] = models.Category{ID: cid}
@@ -182,6 +190,17 @@ func (s *TourService) DeleteTour(ctx context.Context, id uint) error {
 
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("%s: %w", appErrors.ErrCtxTourServiceDelete, err)
+	}
+	return nil
+}
+
+func (s *TourService) validateCategoryIDs(ctx context.Context, ids []uint) error {
+	count, err := s.catRepo.CountByIDs(ctx, ids)
+	if err != nil {
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxTourServiceValidateCategories, err)
+	}
+	if int(count) != len(ids) {
+		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgTourCategoryNotFound)
 	}
 	return nil
 }

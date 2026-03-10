@@ -207,12 +207,17 @@ func loadTemplates(baseDir string) render.HTMLRender {
 				return s
 			},
 			"jsonArray": func(data any) []string {
-				b, ok := data.(json.RawMessage)
-				if !ok {
+				var raw []byte
+				switch v := data.(type) {
+				case json.RawMessage:
+					raw = v
+				case []byte:
+					raw = v
+				default:
 					return nil
 				}
 				var arr []string
-				if err := json.Unmarshal(b, &arr); err != nil {
+				if err := json.Unmarshal(raw, &arr); err != nil {
 					return nil
 				}
 				return arr

@@ -70,8 +70,12 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, form *ScheduleForm
 		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnDateReq)
 	}
 
-	if !returnDate.After(departure) {
-		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnAfterDepart)
+	if returnDate.Before(departure) {
+		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnNotBeforeDepart)
+	}
+
+	if form.PriceOverride != nil && *form.PriceOverride <= 0 {
+		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgSchedulePriceOverridePositive)
 	}
 
 	if !isValidScheduleStatus(form.Status) {
@@ -111,8 +115,12 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, id uint, form *Sch
 		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnDateReq)
 	}
 
-	if !returnDate.After(departure) {
-		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnAfterDepart)
+	if returnDate.Before(departure) {
+		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgScheduleReturnNotBeforeDepart)
+	}
+
+	if form.PriceOverride != nil && *form.PriceOverride <= 0 {
+		return appErrors.NewAppError(http.StatusBadRequest, appErrors.ErrMsgSchedulePriceOverridePositive)
 	}
 
 	if !isValidScheduleStatus(form.Status) {

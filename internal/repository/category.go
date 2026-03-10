@@ -17,6 +17,7 @@ type CategoryRepo interface {
 	FindBySlug(ctx context.Context, slug string) (*models.Category, error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	ExistsBySlugExcluding(ctx context.Context, slug string, excludeID uint) (bool, error)
+	CountByIDs(ctx context.Context, ids []uint) (int64, error)
 	Create(ctx context.Context, cat *models.Category) error
 	Update(ctx context.Context, cat *models.Category) error
 	Delete(ctx context.Context, id uint) error
@@ -100,6 +101,16 @@ func (r *categoryRepository) ExistsBySlugExcluding(ctx context.Context, slug str
 		return false, fmt.Errorf("%s: %w", appErrors.ErrCtxCategoryCheckSlugExcluding, err)
 	}
 	return count > 0, nil
+}
+
+func (r *categoryRepository) CountByIDs(ctx context.Context, ids []uint) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&models.Category{}).
+		Where("id IN ?", ids).
+		Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("%s: %w", appErrors.ErrCtxCategoryCountByIDs, err)
+	}
+	return count, nil
 }
 
 func (r *categoryRepository) Create(ctx context.Context, cat *models.Category) error {
