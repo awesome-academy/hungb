@@ -48,10 +48,10 @@
         <div class="col-md-4">
           <div class="mb-3">
             <label for="price_override" class="form-label">Giá riêng (VNĐ)</label>
-            <input type="number" class="form-control" id="price_override" name="price_override"
-                   min="0" step="1000"
+            <input type="text" inputmode="numeric" class="form-control" id="price_override" name="price_override"
                    placeholder="Để trống nếu dùng giá tour"
-                   value="{{if .is_edit}}{{if .schedule.PriceOverride}}{{derefFloat .schedule.PriceOverride}}{{end}}{{end}}" />
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   value="{{if .is_edit}}{{formatPriceInputPtr .schedule.PriceOverride}}{{end}}" />
           </div>
         </div>
         <div class="col-md-4">

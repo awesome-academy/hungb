@@ -45,10 +45,11 @@
         <div class="col-md-4">
           <div class="mb-3">
             <label for="price" class="form-label">Giá (VNĐ) <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="price" name="price"
-                   min="1" step="1000" required
+            <input type="text" inputmode="numeric" class="form-control" id="price" name="price"
+                   required
                    placeholder="1000000"
-                   value="{{if .is_edit}}{{.tour.Price}}{{end}}" />
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   value="{{if .is_edit}}{{formatPriceInput .tour.Price}}{{end}}" />
           </div>
         </div>
         <div class="col-md-4">

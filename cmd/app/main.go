@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -221,6 +222,15 @@ func loadTemplates(baseDir string) render.HTMLRender {
 					return 0
 				}
 				return *p
+			},
+			"formatPriceInput": func(p float64) string {
+				return strconv.FormatFloat(p, 'f', -1, 64)
+			},
+			"formatPriceInputPtr": func(p *float64) string {
+				if p == nil {
+					return ""
+				}
+				return strconv.FormatFloat(*p, 'f', -1, 64)
 			},
 			"containsUint": func(slice []uint, val uint) bool {
 				for _, v := range slice {
