@@ -172,6 +172,16 @@ const (
 	LogAdminScheduleDeleteFailed = "admin: delete schedule failed"
 )
 
+// ── Public — Tour
+const (
+	TitlePublicTours = "Danh sách Tour"
+
+	ErrPublicTourNotFound = "Không tìm thấy tour hoặc tour không còn hoạt động."
+
+	LogPublicTourListFailed   = "public: list tours failed"
+	LogPublicTourDetailFailed = "public: get tour detail failed"
+)
+
 // ── Profile
 const (
 	TitleProfile     = "Hồ sơ cá nhân"

@@ -25,15 +25,15 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	socialAcctRepo := repository.NewSocialAccountRepository(db)
 	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
 	catRepo := repository.NewCategoryRepository(db)
+	tourRepo := repository.NewTourRepository(db)
 
-	setupPublicRoutes(router, db, authService, cfg, userRepo, catRepo)
+	setupPublicRoutes(router, db, authService, cfg, userRepo, catRepo, tourRepo)
 	setupAdminRoutes(router, db, authService, catRepo)
 }
 
-func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config, userRepo repository.UserRepo, catRepo repository.CategoryRepo) {
+func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.AuthService, cfg *config.Config, userRepo repository.UserRepo, catRepo repository.CategoryRepo, tourRepo repository.TourRepo) {
 	authHandler := publicHandlers.NewAuthHandler(authService, cfg)
 
-	// Profile & Bank Account services
 	profileService := services.NewProfileService(userRepo)
 	profileHandler := publicHandlers.NewProfileHandler(profileService)
 
@@ -41,10 +41,16 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	bankAccountService := services.NewBankAccountService(db, bankAccountRepo)
 	bankAccountHandler := publicHandlers.NewBankAccountHandler(bankAccountService)
 
+	categoryService := services.NewCategoryService(catRepo)
+	tourService := services.NewTourService(tourRepo, catRepo)
+	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService)
+
 	public := router.Group("/")
 	public.Use(middleware.LoadCategories(catRepo))
 	{
 		public.GET("/", homePage)
+		public.GET("/tours", publicTourHandler.List)
+		public.GET("/tours/:slug", publicTourHandler.Detail)
 		public.GET("/register", authHandler.RegisterForm)
 		public.POST("/register", authHandler.Register)
 		public.GET("/login", authHandler.LoginForm)

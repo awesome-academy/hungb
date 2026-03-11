@@ -214,6 +214,13 @@ func loadTemplates(baseDir string) render.HTMLRender {
 				case []byte:
 					raw = v
 				default:
+					s := fmt.Sprintf("%s", v)
+					if s == "" || s == "<nil>" || strings.HasPrefix(s, "%!") {
+						return nil
+					}
+					raw = []byte(s)
+				}
+				if len(raw) == 0 || string(raw) == "null" {
 					return nil
 				}
 				var arr []string

@@ -1,0 +1,186 @@
+{{template "public_base" .}}
+{{define "content"}}
+{{$tour := .tour}}
+{{$user := .user}}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+    <li class="breadcrumb-item"><a href="/tours">Danh sách Tour</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{$tour.Title}}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    {{if .image_urls}}
+    {{if eq (len .image_urls) 1}}
+    <img src="{{index .image_urls 0}}"
+         class="img-fluid rounded mb-3 w-100"
+         alt="{{$tour.Title}}"
+         style="max-height: 420px; object-fit: cover;"
+         onerror="this.src='/static/images/placeholder.svg'" />
+    {{else}}
+    <div id="tourGallery" class="carousel slide mb-3" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        {{range $i, $url := .image_urls}}
+        <div class="carousel-item {{if eq $i 0}}active{{end}}">
+          <img src="{{$url}}"
+               class="d-block w-100 rounded"
+               alt="{{$tour.Title}} - ảnh {{add $i 1}}"
+               style="height: 420px; object-fit: cover;"
+               onerror="this.src='/static/images/placeholder.svg'" />
+        </div>
+        {{end}}
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#tourGallery" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Trước</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#tourGallery" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Sau</span>
+      </button>
+    </div>
+    {{end}}
+    {{else}}
+    <img src="/static/images/placeholder.svg"
+         class="img-fluid rounded mb-3 w-100"
+         alt="{{$tour.Title}}"
+         style="max-height: 420px; object-fit: cover;" />
+    {{end}}
+
+    <h1 class="h2 mb-2">{{$tour.Title}}</h1>
+
+    <div class="mb-3 d-flex flex-wrap gap-2">
+      {{range $tour.Categories}}
+      <a href="/tours?category={{.Slug}}" class="badge bg-secondary text-decoration-none">{{.Name}}</a>
+      {{end}}
+    </div>
+
+    <div class="border-top pt-3 mb-3">
+      <h5>Mô tả tour</h5>
+      <div class="text-muted">
+        {{if $tour.Description}}
+        {{$tour.Description}}
+        {{else}}
+        <em>Chưa có mô tả.</em>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="border-top pt-3">
+      <h5>Lịch trình khởi hành</h5>
+      {{if $tour.Schedules}}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Ngày khởi hành</th>
+              <th>Ngày về</th>
+              <th>Giá</th>
+              <th>Chỗ còn</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range $tour.Schedules}}
+            <tr>
+              <td><i class="bi bi-calendar-event me-1 text-primary"></i>{{formatDate .DepartureDate}}</td>
+              <td>{{formatDate .ReturnDate}}</td>
+              <td class="fw-semibold text-primary">
+                {{if .PriceOverride}}
+                {{formatPrice (derefFloat .PriceOverride)}}
+                {{else}}
+                {{formatPrice $tour.Price}}
+                {{end}}
+              </td>
+              <td>
+                {{if gt .AvailableSlots 0}}
+                <span class="badge bg-success">{{.AvailableSlots}} chỗ</span>
+                {{else}}
+                <span class="badge bg-danger">Hết chỗ</span>
+                {{end}}
+              </td>
+              <td>
+                {{if $user}}
+                <a href="/tours/{{$tour.ID}}/book?schedule_id={{.ID}}"
+                   class="btn btn-sm btn-primary">
+                  <i class="bi bi-bag-check me-1"></i>Đặt tour
+                </a>
+                {{else}}
+                <a href="/login" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập để đặt
+                </a>
+                {{end}}
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="text-muted py-3 text-center">
+        <i class="bi bi-calendar-x d-block fs-3 mb-2"></i>
+        Hiện chưa có lịch trình nào mở. Vui lòng quay lại sau.
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm sticky-lg-top" style="top: 1rem;">
+      <div class="card-body">
+        <div class="mb-3 text-center">
+          <div class="fs-3 fw-bold text-primary">{{formatPrice $tour.Price}}</div>
+          <div class="text-muted small">Giá từ / người</div>
+        </div>
+        <hr />
+        <ul class="list-unstyled small mb-3">
+          {{if $tour.Location}}
+          <li class="mb-2">
+            <i class="bi bi-geo-alt-fill text-danger me-2"></i>
+            <strong>Địa điểm:</strong> {{$tour.Location}}
+          </li>
+          {{end}}
+          <li class="mb-2">
+            <i class="bi bi-clock-fill text-primary me-2"></i>
+            <strong>Thời gian:</strong> {{$tour.DurationDays}} ngày
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-people-fill text-success me-2"></i>
+            <strong>Tối đa:</strong> {{$tour.MaxParticipants}} người
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-star-fill text-warning me-2"></i>
+            <strong>Đánh giá:</strong>
+            {{printf "%.1f" $tour.AvgRating}} / 5
+            <span class="text-muted">({{.rating_count}} lượt)</span>
+          </li>
+        </ul>
+
+        {{if $user}}
+        {{if $tour.Schedules}}
+        <a href="/tours/{{$tour.ID}}/book"
+           class="btn btn-primary w-100">
+          <i class="bi bi-bag-check me-1"></i>Đặt tour ngay
+        </a>
+        {{else}}
+        <button class="btn btn-secondary w-100" disabled>
+          <i class="bi bi-calendar-x me-1"></i>Chưa có lịch trình
+        </button>
+        {{end}}
+        {{else}}
+        <div class="alert alert-info mb-2 small">
+          <i class="bi bi-info-circle me-1"></i>
+          Vui lòng đăng nhập để đặt tour.
+        </div>
+        <a href="/login" class="btn btn-outline-primary w-100">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập để đặt tour
+        </a>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

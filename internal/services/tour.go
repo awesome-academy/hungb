@@ -211,6 +211,23 @@ func isValidTourStatus(status string) bool {
 		status == constants.TourStatusInactive
 }
 
+func (s *TourService) GetPublicTourBySlug(ctx context.Context, slug string) (*models.Tour, int64, error) {
+	tour, err := s.repo.FindBySlugPublic(ctx, slug)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, 0, appErrors.ErrTourNotFound
+		}
+		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourDetail, err)
+	}
+
+	ratingCount, err := s.repo.CountRatingsByTourID(ctx, tour.ID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourCountRatings, err)
+	}
+
+	return tour, ratingCount, nil
+}
+
 func filterNonEmpty(ss []string) []string {
 	result := make([]string, 0, len(ss))
 	for _, s := range ss {

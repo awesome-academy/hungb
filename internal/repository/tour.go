@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
@@ -12,17 +13,27 @@ import (
 )
 
 type TourFilter struct {
-	Status     string
-	CategoryID uint
-	Search     string
-	Page       int
-	Limit      int
+	Status           string
+	CategoryID       uint
+	CategorySlug     string
+	Search           string
+	MinPrice         float64
+	MaxPrice         float64
+	Location         string
+	MinDuration      int
+	MaxDuration      int
+	SortBy           string
+	SortOrder        string
+	Page             int
+	Limit            int
+	IncludeSchedules bool
 }
 
 type TourRepo interface {
 	FindAll(ctx context.Context, filter TourFilter) ([]models.Tour, int64, error)
 	FindByID(ctx context.Context, id uint) (*models.Tour, error)
 	FindBySlug(ctx context.Context, slug string) (*models.Tour, error)
+	FindBySlugPublic(ctx context.Context, slug string) (*models.Tour, error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	ExistsBySlugExcluding(ctx context.Context, slug string, excludeID uint) (bool, error)
 	Create(ctx context.Context, tour *models.Tour) error
@@ -30,6 +41,7 @@ type TourRepo interface {
 	Delete(ctx context.Context, id uint) error
 	HasActiveBookings(ctx context.Context, tourID uint) (bool, error)
 	ReplaceCategories(ctx context.Context, tour *models.Tour, categories []models.Category) error
+	CountRatingsByTourID(ctx context.Context, tourID uint) (int64, error)
 }
 
 type tourRepository struct {
@@ -46,6 +58,14 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}
+	if filter.CategorySlug != "" {
+		query = query.Where("id IN (?)",
+			r.db.Table("tour_categories").Select("tour_id").
+				Where("category_id IN (?)",
+					r.db.Table("categories").Select("id").Where("slug = ?", filter.CategorySlug),
+				),
+		)
+	}
 	if filter.CategoryID > 0 {
 		query = query.Where("id IN (?)",
 			r.db.Table("tour_categories").Select("tour_id").Where("category_id = ?", filter.CategoryID),
@@ -53,7 +73,22 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 	}
 	if filter.Search != "" {
 		like := "%" + filter.Search + "%"
-		query = query.Where("title ILIKE ? OR location ILIKE ?", like, like)
+		query = query.Where("(title ILIKE ? OR description ILIKE ? OR location ILIKE ?)", like, like, like)
+	}
+	if filter.MinPrice > 0 {
+		query = query.Where("price >= ?", filter.MinPrice)
+	}
+	if filter.MaxPrice > 0 {
+		query = query.Where("price <= ?", filter.MaxPrice)
+	}
+	if filter.Location != "" {
+		query = query.Where("location ILIKE ?", "%"+filter.Location+"%")
+	}
+	if filter.MinDuration > 0 {
+		query = query.Where("duration_days >= ?", filter.MinDuration)
+	}
+	if filter.MaxDuration > 0 {
+		query = query.Where("duration_days <= ?", filter.MaxDuration)
 	}
 
 	var total int64
@@ -70,13 +105,36 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 	offset := (filter.Page - 1) * filter.Limit
 
 	var tours []models.Tour
+
+	sortCol := "created_at"
+	switch filter.SortBy {
+	case "price", "avg_rating", "duration_days":
+		sortCol = filter.SortBy
+	}
+	sortDir := "DESC"
+	if filter.SortOrder == "asc" {
+		sortDir = "ASC"
+	}
+
 	if err := query.
 		Preload("Categories").
-		Order("created_at DESC").
+		Order(sortCol + " " + sortDir).
 		Limit(filter.Limit).
 		Offset(offset).
 		Find(&tours).Error; err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
+	}
+
+	if filter.IncludeSchedules {
+		for i := range tours {
+			if err := r.db.WithContext(ctx).
+				Where("tour_id = ? AND status = ? AND departure_date >= ?",
+					tours[i].ID, constants.ScheduleStatusOpen, time.Now()).
+				Order("departure_date ASC").
+				Find(&tours[i].Schedules).Error; err != nil {
+				return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
+			}
+		}
 	}
 	return tours, total, nil
 }
@@ -161,4 +219,30 @@ func (r *tourRepository) ReplaceCategories(ctx context.Context, tour *models.Tou
 		return fmt.Errorf("%s: %w", appErrors.ErrCtxTourReplaceCategories, err)
 	}
 	return nil
+}
+
+func (r *tourRepository) FindBySlugPublic(ctx context.Context, slug string) (*models.Tour, error) {
+	var tour models.Tour
+	if err := r.db.WithContext(ctx).
+		Preload("Categories").
+		Preload("Schedules", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, time.Now()).
+				Order("departure_date ASC")
+		}).
+		Where("slug = ? AND status = ?", slug, constants.TourStatusActive).
+		First(&tour).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourFindBySlug, err)
+	}
+	return &tour, nil
+}
+
+func (r *tourRepository) CountRatingsByTourID(ctx context.Context, tourID uint) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&models.Rating{}).
+		Where("tour_id = ?", tourID).
+		Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourCountRatings, err)
+	}
+	return count, nil
 }
