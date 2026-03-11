@@ -130,7 +130,11 @@
 <nav aria-label="Phân trang" class="mt-2">
   <ul class="pagination justify-content-center flex-wrap">
     <li class="page-item {{if le $p.Page 1}}disabled{{end}}">
+      {{if le $p.Page 1}}
+      <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Trang trước">
+      {{else}}
       <a class="page-link" href="{{$.base_url}}page={{$p.PrevPage}}" aria-label="Trang trước">
+      {{end}}
         <span aria-hidden="true">&laquo;</span>
       </a>
     </li>
@@ -140,7 +144,11 @@
     </li>
     {{end}}
     <li class="page-item {{if ge $p.Page $p.TotalPages}}disabled{{end}}">
+      {{if ge $p.Page $p.TotalPages}}
+      <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Trang sau">
+      {{else}}
       <a class="page-link" href="{{$.base_url}}page={{$p.NextPage}}" aria-label="Trang sau">
+      {{end}}
         <span aria-hidden="true">&raquo;</span>
       </a>
     </li>

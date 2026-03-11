@@ -13,19 +13,20 @@ import (
 )
 
 type TourFilter struct {
-	Status       string
-	CategoryID   uint
-	CategorySlug string
-	Search       string
-	MinPrice     float64
-	MaxPrice     float64
-	Location     string
-	MinDuration  int
-	MaxDuration  int
-	SortBy       string
-	SortOrder    string
-	Page         int
-	Limit        int
+	Status           string
+	CategoryID       uint
+	CategorySlug     string
+	Search           string
+	MinPrice         float64
+	MaxPrice         float64
+	Location         string
+	MinDuration      int
+	MaxDuration      int
+	SortBy           string
+	SortOrder        string
+	Page             int
+	Limit            int
+	IncludeSchedules bool
 }
 
 type TourRepo interface {
@@ -72,7 +73,7 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 	}
 	if filter.Search != "" {
 		like := "%" + filter.Search + "%"
-		query = query.Where("title ILIKE ? OR description ILIKE ? OR location ILIKE ?", like, like, like)
+		query = query.Where("(title ILIKE ? OR description ILIKE ? OR location ILIKE ?)", like, like, like)
 	}
 	if filter.MinPrice > 0 {
 		query = query.Where("price >= ?", filter.MinPrice)
@@ -117,16 +118,23 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 
 	if err := query.
 		Preload("Categories").
-		Preload("Schedules", func(db *gorm.DB) *gorm.DB {
-			return db.
-				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, time.Now()).
-				Order("departure_date ASC")
-		}).
 		Order(sortCol + " " + sortDir).
 		Limit(filter.Limit).
 		Offset(offset).
 		Find(&tours).Error; err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
+	}
+
+	if filter.IncludeSchedules {
+		for i := range tours {
+			if err := r.db.WithContext(ctx).
+				Where("tour_id = ? AND status = ? AND departure_date >= ?",
+					tours[i].ID, constants.ScheduleStatusOpen, time.Now()).
+				Order("departure_date ASC").
+				Find(&tours[i].Schedules).Error; err != nil {
+				return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
+			}
+		}
 	}
 	return tours, total, nil
 }

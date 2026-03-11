@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
@@ -41,18 +42,19 @@ func (h *PublicTourHandler) List(c *gin.Context) {
 	sortBy, sortOrder := parseSortParam(c.Query("sort"))
 
 	filter := repository.TourFilter{
-		Status:       "active",
-		CategorySlug: c.Query("category"),
-		Search:       c.Query("q"),
-		Location:     c.Query("location"),
-		MinPrice:     minPrice,
-		MaxPrice:     maxPrice,
-		MinDuration:  minDuration,
-		MaxDuration:  maxDuration,
-		SortBy:       sortBy,
-		SortOrder:    sortOrder,
-		Page:         page,
-		Limit:        10,
+		Status:           constants.TourStatusActive,
+		CategorySlug:     c.Query("category"),
+		Search:           c.Query("q"),
+		Location:         c.Query("location"),
+		MinPrice:         minPrice,
+		MaxPrice:         maxPrice,
+		MinDuration:      minDuration,
+		MaxDuration:      maxDuration,
+		SortBy:           sortBy,
+		SortOrder:        sortOrder,
+		Page:             page,
+		Limit:            constants.DefaultPageLimit,
+		IncludeSchedules: true,
 	}
 
 	tours, total, err := h.service.ListTours(c.Request.Context(), filter)
@@ -61,6 +63,7 @@ func (h *PublicTourHandler) List(c *gin.Context) {
 		c.HTML(http.StatusInternalServerError, "public/pages/error.html", gin.H{
 			"title":          messages.ErrInternalServer,
 			"message":        messages.ErrInternalServer,
+			"status":         http.StatusInternalServerError,
 			"user":           middleware.GetCurrentUser(c),
 			"nav_categories": middleware.GetNavCategories(c),
 		})
@@ -75,9 +78,18 @@ func (h *PublicTourHandler) List(c *gin.Context) {
 		totalPages = 1
 	}
 
-	pages := make([]int, totalPages)
-	for i := range pages {
-		pages[i] = i + 1
+	const pageWindow = 2
+	winStart := page - pageWindow
+	if winStart < 1 {
+		winStart = 1
+	}
+	winEnd := page + pageWindow
+	if winEnd > totalPages {
+		winEnd = totalPages
+	}
+	pages := make([]int, 0, winEnd-winStart+1)
+	for i := winStart; i <= winEnd; i++ {
+		pages = append(pages, i)
 	}
 
 	categories, _ := h.catService.AllFlatCategories(c.Request.Context())
@@ -99,8 +111,8 @@ func (h *PublicTourHandler) List(c *gin.Context) {
 		"pagination": map[string]any{
 			"Page":       page,
 			"TotalPages": totalPages,
-			"PrevPage":   page - 1,
-			"NextPage":   page + 1,
+			"PrevPage":   max(1, page-1),
+			"NextPage":   min(totalPages, page+1),
 			"Pages":      pages,
 		},
 	})
@@ -124,6 +136,7 @@ func (h *PublicTourHandler) Detail(c *gin.Context) {
 		slog.Error(messages.LogPublicTourDetailFailed, "slug", slug, "error", err)
 		c.HTML(http.StatusInternalServerError, "public/pages/error.html", gin.H{
 			"title":          messages.ErrInternalServer,
+			"status":         http.StatusInternalServerError,
 			"message":        messages.ErrInternalServer,
 			"user":           middleware.GetCurrentUser(c),
 			"nav_categories": middleware.GetNavCategories(c),
