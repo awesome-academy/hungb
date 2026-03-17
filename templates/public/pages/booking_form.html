@@ -1,0 +1,165 @@
+{{template "public_base" .}}
+{{define "content"}}
+{{$tour := .tour}}
+{{$selectedScheduleID := .selected_schedule_id}}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+    <li class="breadcrumb-item"><a href="/tours">Danh sách Tour</a></li>
+    <li class="breadcrumb-item"><a href="/tours/{{$tour.Slug}}">{{$tour.Title}}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Đặt tour</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-bag-check me-2"></i>Đặt tour: {{$tour.Title}}</h4>
+      </div>
+      <div class="card-body">
+          <form method="POST" action="/tours/{{$tour.Slug}}/book">
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+          <h5 class="mb-3">Chọn lịch trình</h5>
+          <div class="table-responsive mb-3">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;"></th>
+                  <th>Ngày khởi hành</th>
+                  <th>Ngày về</th>
+                  <th>Giá / người</th>
+                  <th>Chỗ còn</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{range $tour.Schedules}}
+                <tr>
+                  <td>
+                    <div class="form-check">
+                      <input class="form-check-input schedule-radio"
+                             type="radio"
+                             name="schedule_id"
+                             value="{{.ID}}"
+                             data-price="{{if .PriceOverride}}{{derefFloat .PriceOverride}}{{else}}{{$tour.Price}}{{end}}"
+                             data-slots="{{.AvailableSlots}}"
+                             {{if eq .ID $selectedScheduleID}}checked{{end}}
+                             {{if eq .AvailableSlots 0}}disabled{{end}}
+                             required />
+                    </div>
+                  </td>
+                  <td>{{formatDate .DepartureDate}}</td>
+                  <td>{{formatDate .ReturnDate}}</td>
+                  <td class="fw-semibold text-primary">
+                    {{if .PriceOverride}}
+                    {{formatPrice (derefFloat .PriceOverride)}}
+                    {{else}}
+                    {{formatPrice $tour.Price}}
+                    {{end}}
+                  </td>
+                  <td>
+                    {{if gt .AvailableSlots 0}}
+                    <span class="badge bg-success">{{.AvailableSlots}} chỗ</span>
+                    {{else}}
+                    <span class="badge bg-danger">Hết chỗ</span>
+                    {{end}}
+                  </td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mb-3">
+            <label for="num_participants" class="form-label fw-semibold">Số người tham gia</label>
+            <input type="number"
+                   class="form-control"
+                   id="num_participants"
+                   name="num_participants"
+                   min="1"
+                   max="99"
+                   value="1"
+                   required
+                   style="max-width: 200px;" />
+            <div class="form-text" id="slotsHint"></div>
+          </div>
+
+          <div class="mb-3">
+            <label for="note" class="form-label fw-semibold">Ghi chú (tùy chọn)</label>
+            <textarea class="form-control" id="note" name="note" rows="3" maxlength="500" placeholder="Yêu cầu đặc biệt, thông tin thêm..."></textarea>
+          </div>
+
+          <div class="card bg-light mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Tạm tính:</span>
+                <span class="fs-4 fw-bold text-primary" id="totalPrice">0 ₫</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-bag-check me-1"></i>Xác nhận đặt tour
+            </button>
+            <a href="/tours/{{$tour.Slug}}" class="btn btn-outline-secondary btn-lg">Quay lại</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm sticky-lg-top" style="top: 1rem;">
+      <div class="card-body">
+        <h5 class="card-title">{{$tour.Title}}</h5>
+        <hr />
+        <ul class="list-unstyled small mb-0">
+          {{if $tour.Location}}
+          <li class="mb-2">
+            <i class="bi bi-geo-alt-fill text-danger me-2"></i>{{$tour.Location}}
+          </li>
+          {{end}}
+          <li class="mb-2">
+            <i class="bi bi-clock-fill text-primary me-2"></i>{{$tour.DurationDays}} ngày
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-cash-coin text-success me-2"></i>Giá từ: {{formatPrice $tour.Price}}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var radios = document.querySelectorAll('.schedule-radio');
+  var numInput = document.getElementById('num_participants');
+  var totalEl = document.getElementById('totalPrice');
+  var slotsHint = document.getElementById('slotsHint');
+
+  function formatVND(n) {
+    return n.toLocaleString('vi-VN') + ' ₫';
+  }
+
+  function calc() {
+    var checked = document.querySelector('.schedule-radio:checked');
+    if (!checked) { totalEl.textContent = '0 ₫'; slotsHint.textContent = ''; return; }
+    var price = parseFloat(checked.dataset.price) || 0;
+    var slots = parseInt(checked.dataset.slots) || 0;
+    var num = parseInt(numInput.value) || 1;
+    if (num < 1) num = 1;
+    numInput.max = slots;
+    slotsHint.textContent = 'Còn ' + slots + ' chỗ trống';
+    totalEl.textContent = formatVND(price * num);
+  }
+
+  radios.forEach(function(r) { r.addEventListener('change', calc); });
+  numInput.addEventListener('input', calc);
+  calc();
+})();
+</script>
+{{end}}

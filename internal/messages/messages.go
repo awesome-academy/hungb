@@ -182,6 +182,31 @@ const (
 	LogPublicTourDetailFailed = "public: get tour detail failed"
 )
 
+// ── Public — Booking
+const (
+	TitleBooking             = "Đặt tour"
+	TitleBookingConfirmation = "Đặt tour thành công"
+	TitleMyBookings          = "Lịch sử đặt tour"
+	TitleMyBookingDetail     = "Chi tiết đặt tour"
+
+	MsgBookingSuccess       = "Đặt tour thành công! Vui lòng kiểm tra thông tin đặt tour."
+	MsgBookingCancelSuccess = "Hủy đặt tour thành công."
+
+	ErrBookingNoSchedules     = "Tour hiện chưa có lịch trình mở."
+	ErrBookingScheduleNotOpen = "Lịch trình không mở hoặc đã hết chỗ."
+	ErrBookingNotEnoughSlots  = "Số lượng người vượt quá chỗ còn lại."
+	ErrBookingCreateFail      = "Không thể đặt tour. Vui lòng thử lại."
+	ErrBookingNotFound        = "Không tìm thấy thông tin đặt tour."
+	ErrBookingCannotCancel    = "Không thể hủy đặt tour ở trạng thái hiện tại."
+	ErrBookingCancelFail      = "Không thể hủy đặt tour. Vui lòng thử lại."
+
+	LogBookingFormFailed   = "public: booking form failed"
+	LogBookingCreateFailed = "public: create booking failed"
+	LogBookingGetFailed    = "public: get booking failed"
+	LogBookingListFailed   = "public: list bookings failed"
+	LogBookingCancelFailed = "public: cancel booking failed"
+)
+
 // ── Profile
 const (
 	TitleProfile     = "Hồ sơ cá nhân"

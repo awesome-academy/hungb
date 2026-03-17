@@ -45,6 +45,11 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	tourService := services.NewTourService(tourRepo, catRepo)
 	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService)
 
+	scheduleRepo := repository.NewScheduleRepository(db)
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingService := services.NewBookingService(db, bookingRepo, scheduleRepo)
+	bookingHandler := publicHandlers.NewBookingHandler(bookingService, tourService)
+
 	public := router.Group("/")
 	public.Use(middleware.LoadCategories(catRepo))
 	{
@@ -80,6 +85,12 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		auth.POST("/bank-accounts/:id/edit", bankAccountHandler.Update)
 		auth.POST("/bank-accounts/:id/delete", bankAccountHandler.Delete)
 		auth.POST("/bank-accounts/:id/set-default", bankAccountHandler.SetDefault)
+
+		auth.GET("/tours/:slug/book", bookingHandler.Form)
+		auth.POST("/tours/:slug/book", bookingHandler.Create)
+		auth.GET("/my/bookings", bookingHandler.MyList)
+		auth.GET("/my/bookings/:id", bookingHandler.Detail)
+		auth.POST("/my/bookings/:id/cancel", bookingHandler.Cancel)
 	}
 }
 

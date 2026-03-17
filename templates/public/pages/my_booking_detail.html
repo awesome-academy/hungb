@@ -1,0 +1,169 @@
+{{template "public_base" .}}
+{{define "content"}}
+{{$booking := .booking}}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+    <li class="breadcrumb-item"><a href="/my/bookings">Lịch sử đặt tour</a></li>
+    <li class="breadcrumb-item active" aria-current="page">#{{$booking.ID}}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Đặt tour #{{$booking.ID}}</h4>
+        {{if eq $booking.Status "pending"}}
+        <span class="badge bg-warning text-dark fs-6">Chờ xác nhận</span>
+        {{else if eq $booking.Status "confirmed"}}
+        <span class="badge bg-success fs-6">Đã xác nhận</span>
+        {{else if eq $booking.Status "cancelled"}}
+        <span class="badge bg-danger fs-6">Đã hủy</span>
+        {{else if eq $booking.Status "completed"}}
+        <span class="badge bg-info fs-6">Hoàn thành</span>
+        {{end}}
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6 mb-3">
+            <strong>Tour:</strong><br />
+            {{if $booking.Tour}}
+            <a href="/tours/{{$booking.Tour.Slug}}">{{$booking.Tour.Title}}</a>
+            {{end}}
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Địa điểm:</strong><br />
+            {{if $booking.Tour}}{{$booking.Tour.Location}}{{end}}
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Ngày khởi hành:</strong><br />
+            {{if $booking.Schedule}}{{formatDate $booking.Schedule.DepartureDate}}{{end}}
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Ngày về:</strong><br />
+            {{if $booking.Schedule}}{{formatDate $booking.Schedule.ReturnDate}}{{end}}
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Số người:</strong><br />
+            {{$booking.NumParticipants}} người
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Tổng tiền:</strong><br />
+            <span class="fs-5 fw-bold text-primary">{{formatPrice $booking.TotalPrice}}</span>
+          </div>
+          <div class="col-md-6 mb-3">
+            <strong>Ngày đặt:</strong><br />
+            {{formatDate $booking.CreatedAt}}
+          </div>
+          {{if $booking.Note}}
+          <div class="col-12 mb-3">
+            <strong>Ghi chú:</strong><br />
+            {{$booking.Note}}
+          </div>
+          {{end}}
+        </div>
+
+        {{if $booking.Payments}}
+        <h5 class="border-top pt-3">Thanh toán</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Mã GD</th>
+                <th>Số tiền</th>
+                <th>Phương thức</th>
+                <th>Trạng thái</th>
+                <th>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $booking.Payments}}
+              <tr>
+                <td><code>{{.TransactionID}}</code></td>
+                <td>{{formatPrice .Amount}}</td>
+                <td>{{.PaymentMethod}}</td>
+                <td>
+                  {{if eq .Status "pending"}}
+                  <span class="badge bg-warning text-dark">Chờ</span>
+                  {{else if eq .Status "success"}}
+                  <span class="badge bg-success">Thành công</span>
+                  {{else if eq .Status "failed"}}
+                  <span class="badge bg-danger">Thất bại</span>
+                  {{else if eq .Status "refunded"}}
+                  <span class="badge bg-secondary">Hoàn tiền</span>
+                  {{end}}
+                </td>
+                <td>{{formatDate .CreatedAt}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{end}}
+      </div>
+      <div class="card-footer d-flex gap-2">
+        {{if or (eq $booking.Status "pending") (eq $booking.Status "confirmed")}}
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+          <i class="bi bi-x-circle me-1"></i>Hủy đặt tour
+        </button>
+        {{end}}
+        <a href="/my/bookings" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    {{if $booking.Tour}}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">{{$booking.Tour.Title}}</h5>
+        <hr />
+        <ul class="list-unstyled small mb-0">
+          {{if $booking.Tour.Location}}
+          <li class="mb-2">
+            <i class="bi bi-geo-alt-fill text-danger me-2"></i>{{$booking.Tour.Location}}
+          </li>
+          {{end}}
+          <li class="mb-2">
+            <i class="bi bi-clock-fill text-primary me-2"></i>{{$booking.Tour.DurationDays}} ngày
+          </li>
+          <li class="mb-2">
+            <i class="bi bi-cash-coin text-success me-2"></i>Giá từ: {{formatPrice $booking.Tour.Price}}
+          </li>
+        </ul>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+
+{{if or (eq $booking.Status "pending") (eq $booking.Status "confirmed")}}
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelModalLabel">Xác nhận hủy đặt tour</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn hủy đặt tour <strong>#{{$booking.ID}}</strong>?</p>
+        <p class="text-danger small mb-0">Hành động này không thể hoàn tác.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <form method="POST" action="/my/bookings/{{$booking.ID}}/cancel" class="d-inline">
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-x-circle me-1"></i>Xác nhận hủy
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+{{end}}

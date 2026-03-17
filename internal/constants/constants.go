@@ -23,6 +23,10 @@ const (
 )
 
 const (
+	RouteMyBookings = "/my/bookings"
+)
+
+const (
 	RouteProfile     = "/profile"
 	RouteProfileEdit = "/profile/edit"
 )
@@ -74,6 +78,13 @@ const (
 	BookingStatusConfirmed = "confirmed"
 	BookingStatusCancelled = "cancelled"
 	BookingStatusCompleted = "completed"
+)
+
+const (
+	PaymentStatusPending  = "pending"
+	PaymentStatusSuccess  = "success"
+	PaymentStatusFailed   = "failed"
+	PaymentStatusRefunded = "refunded"
 )
 
 const DefaultPageLimit = 10
