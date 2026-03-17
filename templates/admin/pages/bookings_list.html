@@ -138,17 +138,17 @@
 <nav aria-label="Phân trang">
   <ul class="pagination justify-content-center">
     <li class="page-item {{if le .page 1}}disabled{{end}}">
-      <a class="page-link" href="/admin/bookings?page={{add .page -1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}">‹</a>
+      <a class="page-link" href="/admin/bookings?page={{add .page -1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if gt .filter.TourID 0}}&tour_id={{.filter.TourID}}{{end}}{{if not .filter.DateFrom.IsZero}}&date_from={{formatDateInput .filter.DateFrom}}{{end}}{{if not .filter.DateTo.IsZero}}&date_to={{formatDateInput .filter.DateTo}}{{end}}">‹</a>
     </li>
     {{$currentPage := .page}}
     {{$filter := .filter}}
-    {{range seq 1 .total_pages}}
+    {{range seq .total_pages}}
     <li class="page-item {{if eq . $currentPage}}active{{end}}">
-      <a class="page-link" href="/admin/bookings?page={{.}}{{if $filter.Status}}&status={{$filter.Status}}{{end}}">{{.}}</a>
+      <a class="page-link" href="/admin/bookings?page={{.}}{{if $filter.Status}}&status={{$filter.Status}}{{end}}{{if gt $filter.UserID 0}}&user_id={{$filter.UserID}}{{end}}{{if gt $filter.TourID 0}}&tour_id={{$filter.TourID}}{{end}}{{if not $filter.DateFrom.IsZero}}&date_from={{formatDateInput $filter.DateFrom}}{{end}}{{if not $filter.DateTo.IsZero}}&date_to={{formatDateInput $filter.DateTo}}{{end}}">{{.}}</a>
     </li>
     {{end}}
     <li class="page-item {{if ge .page .total_pages}}disabled{{end}}">
-      <a class="page-link" href="/admin/bookings?page={{add .page 1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}">›</a>
+      <a class="page-link" href="/admin/bookings?page={{add .page 1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if gt .filter.TourID 0}}&tour_id={{.filter.TourID}}{{end}}{{if not .filter.DateFrom.IsZero}}&date_from={{formatDateInput .filter.DateFrom}}{{end}}{{if not .filter.DateTo.IsZero}}&date_to={{formatDateInput .filter.DateTo}}{{end}}">›</a>
     </li>
   </ul>
 </nav>

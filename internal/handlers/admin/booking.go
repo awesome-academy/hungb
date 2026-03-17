@@ -101,8 +101,6 @@ func (h *BookingHandler) Confirm(c *gin.Context) {
 		errMsg := messages.ErrAdminBookingConfirmFail
 		if errors.Is(err, appErrors.ErrBookingNotFound) {
 			errMsg = messages.ErrAdminBookingNotFound
-		} else if errors.Is(err, appErrors.ErrBookingCannotConfirm) {
-			errMsg = messages.ErrAdminBookingConfirmFail
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteAdminBookings)
@@ -126,8 +124,6 @@ func (h *BookingHandler) Cancel(c *gin.Context) {
 		errMsg := messages.ErrAdminBookingCancelFail
 		if errors.Is(err, appErrors.ErrBookingNotFound) {
 			errMsg = messages.ErrAdminBookingNotFound
-		} else if errors.Is(err, appErrors.ErrBookingCannotCancel) {
-			errMsg = messages.ErrAdminBookingCancelFail
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteAdminBookings)
@@ -151,8 +147,6 @@ func (h *BookingHandler) Complete(c *gin.Context) {
 		errMsg := messages.ErrAdminBookingCompleteFail
 		if errors.Is(err, appErrors.ErrBookingNotFound) {
 			errMsg = messages.ErrAdminBookingNotFound
-		} else if errors.Is(err, appErrors.ErrBookingCannotComplete) {
-			errMsg = messages.ErrAdminBookingCompleteFail
 		}
 		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, constants.RouteAdminBookings)

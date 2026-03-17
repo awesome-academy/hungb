@@ -28,7 +28,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID, tourID, sche
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var schedule models.TourSchedule
-		if err := tx.First(&schedule, scheduleID).Error; err != nil {
+		if err := tx.Where("id = ? AND tour_id = ?", scheduleID, tourID).First(&schedule).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return appErrors.ErrScheduleNotFound
 			}
@@ -49,7 +49,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID, tourID, sche
 		totalPrice := unitPrice * float64(numParticipants)
 
 		result := tx.Model(&models.TourSchedule{}).
-			Where("id = ? AND status = ? AND available_slots >= ?", scheduleID, constants.ScheduleStatusOpen, numParticipants).
+			Where("id = ? AND tour_id = ? AND status = ? AND available_slots >= ?", scheduleID, tourID, constants.ScheduleStatusOpen, numParticipants).
 			Update("available_slots", gorm.Expr("available_slots - ?", numParticipants))
 		if result.Error != nil {
 			return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, result.Error)
@@ -59,11 +59,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, userID, tourID, sche
 		}
 
 		var updatedSchedule models.TourSchedule
-		if err := tx.First(&updatedSchedule, scheduleID).Error; err != nil {
+		if err := tx.Where("id = ? AND tour_id = ?", scheduleID, tourID).First(&updatedSchedule).Error; err != nil {
 			return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceCreate, err)
 		}
 		if updatedSchedule.AvailableSlots == 0 {
-			tx.Model(&models.TourSchedule{}).Where("id = ?", scheduleID).Update("status", constants.ScheduleStatusFull)
+			if err := tx.Model(&models.TourSchedule{}).Where("id = ? AND tour_id = ?", scheduleID, tourID).Update("status", constants.ScheduleStatusFull).Error; err != nil {
+				return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, err)
+			}
 		}
 
 		booking = &models.Booking{
@@ -125,8 +127,17 @@ func (s *BookingService) CancelBooking(ctx context.Context, id, userID uint) err
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&models.Booking{}).Where("id = ?", id).Update("status", constants.BookingStatusCancelled).Error; err != nil {
-			return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingUpdateStatus, err)
+		bookingResult := tx.Model(&models.Booking{}).
+			Where("id = ? AND user_id = ? AND status IN ?", id, userID, []string{
+				constants.BookingStatusPending,
+				constants.BookingStatusConfirmed,
+			}).
+			Update("status", constants.BookingStatusCancelled)
+		if bookingResult.Error != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingUpdateStatus, bookingResult.Error)
+		}
+		if bookingResult.RowsAffected == 0 {
+			return appErrors.ErrBookingCannotCancel
 		}
 
 		result := tx.Model(&models.TourSchedule{}).
@@ -136,14 +147,18 @@ func (s *BookingService) CancelBooking(ctx context.Context, id, userID uint) err
 			return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, result.Error)
 		}
 
-		tx.Model(&models.TourSchedule{}).
+		if err := tx.Model(&models.TourSchedule{}).
 			Where("id = ? AND status = ?", booking.ScheduleID, constants.ScheduleStatusFull).
-			Update("status", constants.ScheduleStatusOpen)
+			Update("status", constants.ScheduleStatusOpen).Error; err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, err)
+		}
 
 		if len(booking.Payments) > 0 {
-			tx.Model(&models.Payment{}).
+			if err := tx.Model(&models.Payment{}).
 				Where("booking_id = ? AND status = ?", id, constants.PaymentStatusSuccess).
-				Update("status", constants.PaymentStatusRefunded)
+				Update("status", constants.PaymentStatusRefunded).Error; err != nil {
+				return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceCancel, err)
+			}
 		}
 
 		return nil
@@ -156,17 +171,6 @@ func (s *BookingService) ListAllBookings(ctx context.Context, filter repository.
 		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceList, err)
 	}
 	return bookings, total, nil
-}
-
-func (s *BookingService) GetBookingByID(ctx context.Context, id uint) (*models.Booking, error) {
-	booking, err := s.bookingRepo.FindByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, appErrors.ErrBookingNotFound
-		}
-		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceGet, err)
-	}
-	return booking, nil
 }
 
 func (s *BookingService) AdminConfirmBooking(ctx context.Context, id uint) error {
@@ -200,18 +204,24 @@ func (s *BookingService) AdminCancelBooking(ctx context.Context, id uint) error 
 			return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingUpdateStatus, err)
 		}
 
-		tx.Model(&models.TourSchedule{}).
+		if err := tx.Model(&models.TourSchedule{}).
 			Where("id = ?", booking.ScheduleID).
-			Update("available_slots", gorm.Expr("available_slots + ?", booking.NumParticipants))
+			Update("available_slots", gorm.Expr("available_slots + ?", booking.NumParticipants)).Error; err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, err)
+		}
 
-		tx.Model(&models.TourSchedule{}).
+		if err := tx.Model(&models.TourSchedule{}).
 			Where("id = ? AND status = ?", booking.ScheduleID, constants.ScheduleStatusFull).
-			Update("status", constants.ScheduleStatusOpen)
+			Update("status", constants.ScheduleStatusOpen).Error; err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxScheduleUpdateSlots, err)
+		}
 
 		if len(booking.Payments) > 0 {
-			tx.Model(&models.Payment{}).
+			if err := tx.Model(&models.Payment{}).
 				Where("booking_id = ? AND status = ?", id, constants.PaymentStatusSuccess).
-				Update("status", constants.PaymentStatusRefunded)
+				Update("status", constants.PaymentStatusRefunded).Error; err != nil {
+				return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceCancel, err)
+			}
 		}
 
 		return nil

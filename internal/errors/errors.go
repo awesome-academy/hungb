@@ -98,6 +98,7 @@ const (
 
 const (
 	ErrCtxPublicTourFindBySlug   = "public find tour by slug"
+	ErrCtxPublicTourFindByID     = "public find tour by id"
 	ErrCtxPublicTourCountRatings = "public count tour ratings"
 	ErrCtxPublicTourDetail       = "public get tour detail"
 )

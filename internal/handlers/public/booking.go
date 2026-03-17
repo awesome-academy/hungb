@@ -122,10 +122,21 @@ func (h *BookingHandler) Create(c *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgBookingSuccess, "success")
-	_ = session.Save()
-	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyBookings, booking.ID))
+	fullBooking, err := h.bookingService.GetBooking(c.Request.Context(), booking.ID, user.ID)
+	if err != nil {
+		session := sessions.Default(c)
+		session.AddFlash(messages.MsgBookingSuccess, "success")
+		_ = session.Save()
+		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyBookings, booking.ID))
+		return
+	}
+
+	c.HTML(http.StatusOK, "public/pages/booking_confirmation.html", gin.H{
+		"title":          messages.TitleBookingConfirmation,
+		"user":           user,
+		"nav_categories": middleware.GetNavCategories(c),
+		"booking":        fullBooking,
+	})
 }
 
 func (h *BookingHandler) MyList(c *gin.Context) {
@@ -142,13 +153,7 @@ func (h *BookingHandler) MyList(c *gin.Context) {
 		return
 	}
 
-	totalPages := int(total) / constants.DefaultPageLimit
-	if int(total)%constants.DefaultPageLimit > 0 {
-		totalPages++
-	}
-	if totalPages < 1 {
-		totalPages = 1
-	}
+	totalPages := max(1, (int(total)+constants.DefaultPageLimit-1)/constants.DefaultPageLimit)
 
 	const pageWindow = 2
 	winStart := page - pageWindow

@@ -251,7 +251,7 @@ func (r *tourRepository) FindByIDPublic(ctx context.Context, id uint) (*models.T
 		}).
 		Where("status = ?", constants.TourStatusActive).
 		First(&tour, id).Error; err != nil {
-		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourFindBySlug, err)
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourFindByID, err)
 	}
 	return &tour, nil
 }
