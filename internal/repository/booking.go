@@ -3,17 +3,30 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
 	"sun-booking-tours/internal/models"
 
 	"gorm.io/gorm"
 )
 
+type BookingFilter struct {
+	Status   string
+	UserID   uint
+	TourID   uint
+	DateFrom time.Time
+	DateTo   time.Time
+	Page     int
+	Limit    int
+}
+
 type BookingRepo interface {
 	Create(ctx context.Context, booking *models.Booking) error
 	FindByID(ctx context.Context, id uint) (*models.Booking, error)
 	FindByUserID(ctx context.Context, userID uint, page, limit int) ([]models.Booking, int64, error)
+	FindAll(ctx context.Context, filter BookingFilter) ([]models.Booking, int64, error)
 	UpdateStatus(ctx context.Context, id uint, status string) error
 }
 
@@ -67,6 +80,53 @@ func (r *bookingRepository) FindByUserID(ctx context.Context, userID uint, page,
 		Offset(offset).
 		Find(&bookings).Error; err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingFindByUser, err)
+	}
+	return bookings, total, nil
+}
+
+func (r *bookingRepository) FindAll(ctx context.Context, filter BookingFilter) ([]models.Booking, int64, error) {
+	query := r.db.WithContext(ctx).Model(&models.Booking{})
+
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.UserID > 0 {
+		query = query.Where("user_id = ?", filter.UserID)
+	}
+	if filter.TourID > 0 {
+		query = query.Where("tour_id = ?", filter.TourID)
+	}
+	if !filter.DateFrom.IsZero() {
+		query = query.Where("created_at >= ?", filter.DateFrom)
+	}
+	if !filter.DateTo.IsZero() {
+		query = query.Where("created_at <= ?", filter.DateTo)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingCountAll, err)
+	}
+
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.Limit <= 0 {
+		filter.Limit = constants.DefaultPageLimit
+	}
+	offset := (filter.Page - 1) * filter.Limit
+
+	var bookings []models.Booking
+	if err := query.
+		Preload("User").
+		Preload("Tour").
+		Preload("Schedule").
+		Preload("Payments").
+		Order("created_at DESC").
+		Limit(filter.Limit).
+		Offset(offset).
+		Find(&bookings).Error; err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingFindAll, err)
 	}
 	return bookings, total, nil
 }

@@ -149,3 +149,85 @@ func (s *BookingService) CancelBooking(ctx context.Context, id, userID uint) err
 		return nil
 	})
 }
+
+func (s *BookingService) ListAllBookings(ctx context.Context, filter repository.BookingFilter) ([]models.Booking, int64, error) {
+	bookings, total, err := s.bookingRepo.FindAll(ctx, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceList, err)
+	}
+	return bookings, total, nil
+}
+
+func (s *BookingService) GetBookingByID(ctx context.Context, id uint) (*models.Booking, error) {
+	booking, err := s.bookingRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErrors.ErrBookingNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceGet, err)
+	}
+	return booking, nil
+}
+
+func (s *BookingService) AdminConfirmBooking(ctx context.Context, id uint) error {
+	booking, err := s.bookingRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return appErrors.ErrBookingNotFound
+		}
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceConfirm, err)
+	}
+	if booking.Status != constants.BookingStatusPending {
+		return appErrors.ErrBookingCannotConfirm
+	}
+	return s.bookingRepo.UpdateStatus(ctx, id, constants.BookingStatusConfirmed)
+}
+
+func (s *BookingService) AdminCancelBooking(ctx context.Context, id uint) error {
+	booking, err := s.bookingRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return appErrors.ErrBookingNotFound
+		}
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceCancel, err)
+	}
+	if booking.Status != constants.BookingStatusPending && booking.Status != constants.BookingStatusConfirmed {
+		return appErrors.ErrBookingCannotCancel
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.Booking{}).Where("id = ?", id).Update("status", constants.BookingStatusCancelled).Error; err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingUpdateStatus, err)
+		}
+
+		tx.Model(&models.TourSchedule{}).
+			Where("id = ?", booking.ScheduleID).
+			Update("available_slots", gorm.Expr("available_slots + ?", booking.NumParticipants))
+
+		tx.Model(&models.TourSchedule{}).
+			Where("id = ? AND status = ?", booking.ScheduleID, constants.ScheduleStatusFull).
+			Update("status", constants.ScheduleStatusOpen)
+
+		if len(booking.Payments) > 0 {
+			tx.Model(&models.Payment{}).
+				Where("booking_id = ? AND status = ?", id, constants.PaymentStatusSuccess).
+				Update("status", constants.PaymentStatusRefunded)
+		}
+
+		return nil
+	})
+}
+
+func (s *BookingService) AdminCompleteBooking(ctx context.Context, id uint) error {
+	booking, err := s.bookingRepo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return appErrors.ErrBookingNotFound
+		}
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxBookingServiceComplete, err)
+	}
+	if booking.Status != constants.BookingStatusConfirmed {
+		return appErrors.ErrBookingCannotComplete
+	}
+	return s.bookingRepo.UpdateStatus(ctx, id, constants.BookingStatusCompleted)
+}

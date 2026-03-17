@@ -201,18 +201,27 @@ const (
 )
 
 const (
-	ErrCtxBookingServiceCreate = "booking service create"
-	ErrCtxBookingServiceGet    = "booking service get"
-	ErrCtxBookingServiceList   = "booking service list"
-	ErrCtxBookingServiceCancel = "booking service cancel"
+	ErrCtxBookingServiceCreate   = "booking service create"
+	ErrCtxBookingServiceGet      = "booking service get"
+	ErrCtxBookingServiceList     = "booking service list"
+	ErrCtxBookingServiceCancel   = "booking service cancel"
+	ErrCtxBookingServiceConfirm  = "booking service confirm"
+	ErrCtxBookingServiceComplete = "booking service complete"
+)
+
+const (
+	ErrCtxBookingFindAll  = "find all bookings"
+	ErrCtxBookingCountAll = "count all bookings"
 )
 
 // Booking
 var (
-	ErrBookingNotFound     = NewAppError(http.StatusNotFound, "booking not found")
-	ErrScheduleNotOpen     = NewAppError(http.StatusBadRequest, "schedule is not open for booking")
-	ErrNotEnoughSlots      = NewAppError(http.StatusBadRequest, "not enough available slots")
-	ErrBookingCannotCancel = NewAppError(http.StatusBadRequest, "booking cannot be cancelled")
+	ErrBookingNotFound       = NewAppError(http.StatusNotFound, "booking not found")
+	ErrScheduleNotOpen       = NewAppError(http.StatusBadRequest, "schedule is not open for booking")
+	ErrNotEnoughSlots        = NewAppError(http.StatusBadRequest, "not enough available slots")
+	ErrBookingCannotCancel   = NewAppError(http.StatusBadRequest, "booking cannot be cancelled")
+	ErrBookingCannotConfirm  = NewAppError(http.StatusBadRequest, "booking cannot be confirmed")
+	ErrBookingCannotComplete = NewAppError(http.StatusBadRequest, "booking cannot be completed")
 )
 
 // Payment

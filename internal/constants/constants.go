@@ -62,6 +62,10 @@ const (
 )
 
 const (
+	RouteAdminBookings = "/admin/bookings"
+)
+
+const (
 	TourStatusDraft    = "draft"
 	TourStatusActive   = "active"
 	TourStatusInactive = "inactive"

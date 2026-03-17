@@ -111,6 +111,10 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 	scheduleService := services.NewScheduleService(scheduleRepo, tourRepo)
 	scheduleHandler := adminHandlers.NewScheduleHandler(scheduleService, tourService)
 
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingService := services.NewBookingService(db, bookingRepo, scheduleRepo)
+	adminBookingHandler := adminHandlers.NewBookingHandler(bookingService)
+
 	admin := router.Group("/admin")
 	{
 		admin.GET("/", redirectToDashboard)
@@ -143,6 +147,11 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.GET("/schedules/:id/edit", scheduleHandler.EditForm)
 		adminAuth.POST("/schedules/:id/edit", scheduleHandler.Update)
 		adminAuth.POST("/schedules/:id/delete", scheduleHandler.Delete)
+
+		adminAuth.GET("/bookings", adminBookingHandler.List)
+		adminAuth.POST("/bookings/:id/confirm", adminBookingHandler.Confirm)
+		adminAuth.POST("/bookings/:id/cancel", adminBookingHandler.Cancel)
+		adminAuth.POST("/bookings/:id/complete", adminBookingHandler.Complete)
 	}
 }
 

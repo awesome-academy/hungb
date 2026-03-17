@@ -182,6 +182,25 @@ const (
 	LogPublicTourDetailFailed = "public: get tour detail failed"
 )
 
+// ── Admin — Booking
+const (
+	TitleAdminBookings = "Quản lý đặt tour"
+
+	MsgAdminBookingConfirmed = "Xác nhận đặt tour thành công."
+	MsgAdminBookingCancelled = "Hủy đặt tour thành công."
+	MsgAdminBookingCompleted = "Đánh dấu hoàn thành thành công."
+
+	ErrAdminBookingNotFound     = "Không tìm thấy đặt tour."
+	ErrAdminBookingConfirmFail  = "Không thể xác nhận đặt tour."
+	ErrAdminBookingCancelFail   = "Không thể hủy đặt tour."
+	ErrAdminBookingCompleteFail = "Không thể đánh dấu hoàn thành."
+
+	LogAdminBookingListFailed     = "admin: list bookings failed"
+	LogAdminBookingConfirmFailed  = "admin: confirm booking failed"
+	LogAdminBookingCancelFailed   = "admin: cancel booking failed"
+	LogAdminBookingCompleteFailed = "admin: complete booking failed"
+)
+
 // ── Public — Booking
 const (
 	TitleBooking             = "Đặt tour"
