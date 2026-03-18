@@ -243,10 +243,54 @@ const (
 
 // Review & Rating
 var (
-	ErrReviewNotFound  = NewAppError(http.StatusNotFound, "review not found")
-	ErrRatingNotFound  = NewAppError(http.StatusNotFound, "rating not found")
-	ErrAlreadyRated    = NewAppError(http.StatusConflict, "already rated this tour")
-	ErrCommentNotFound = NewAppError(http.StatusNotFound, "comment not found")
+	ErrReviewNotFound      = NewAppError(http.StatusNotFound, "review not found")
+	ErrReviewNotOwner      = NewAppError(http.StatusForbidden, "not review owner")
+	ErrReviewCannotApprove = NewAppError(http.StatusBadRequest, "review cannot be approved")
+	ErrReviewCannotReject  = NewAppError(http.StatusBadRequest, "review cannot be rejected")
+	ErrCommentNotFound     = NewAppError(http.StatusNotFound, "comment not found")
+	ErrCommentNotOwner     = NewAppError(http.StatusForbidden, "not comment owner")
+)
+
+const (
+	ErrCtxReviewCreate          = "create review"
+	ErrCtxReviewFindByID        = "find review by id"
+	ErrCtxReviewFindByUser      = "find reviews by user"
+	ErrCtxReviewCountByUser     = "count reviews by user"
+	ErrCtxReviewFindAllPublic   = "find all public reviews"
+	ErrCtxReviewCountPublic     = "count public reviews"
+	ErrCtxReviewFindAll         = "find all reviews"
+	ErrCtxReviewCountAll        = "count all reviews"
+	ErrCtxReviewUpdate          = "update review"
+	ErrCtxReviewDelete          = "delete review"
+	ErrCtxReviewUpdateStatus    = "update review status"
+	ErrCtxReviewUpdateLikeCount = "update review like count"
+)
+
+const (
+	ErrCtxCommentCreate       = "create comment"
+	ErrCtxCommentFindByReview = "find comments by review"
+	ErrCtxCommentFindByID     = "find comment by id"
+	ErrCtxCommentDelete       = "delete comment"
+)
+
+const (
+	ErrCtxLikeToggle = "toggle review like"
+	ErrCtxLikeCheck  = "check review like"
+)
+
+const (
+	ErrCtxReviewServiceCreate     = "review service create"
+	ErrCtxReviewServiceGet        = "review service get"
+	ErrCtxReviewServiceList       = "review service list"
+	ErrCtxReviewServiceMyList     = "review service my list"
+	ErrCtxReviewServiceUpdate     = "review service update"
+	ErrCtxReviewServiceDelete     = "review service delete"
+	ErrCtxReviewServiceApprove    = "review service approve"
+	ErrCtxReviewServiceReject     = "review service reject"
+	ErrCtxReviewServiceToggleLike = "review service toggle like"
+	ErrCtxReviewServiceAddComment = "review service add comment"
+	ErrCtxReviewServiceDelComment = "review service delete comment"
+	ErrCtxReviewServiceAdminList  = "review service admin list"
 )
 
 // Authorization

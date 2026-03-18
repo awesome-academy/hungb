@@ -1,0 +1,166 @@
+{{template "public_base" .}}
+{{define "content"}}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/reviews">Đánh giá</a></li>
+    <li class="breadcrumb-item active">{{.review.Title}}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-lg-8">
+    <article class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          {{if eq .review.Type "place"}}
+          <span class="badge bg-primary me-2">Địa điểm</span>
+          {{else if eq .review.Type "food"}}
+          <span class="badge bg-success me-2">Ẩm thực</span>
+          {{else if eq .review.Type "news"}}
+          <span class="badge bg-info me-2">Tin tức</span>
+          {{end}}
+          {{if .review.User}}
+          <small class="text-muted"><i class="bi bi-person me-1"></i>{{.review.User.FullName}}</small>
+          {{end}}
+          <small class="text-muted ms-3"><i class="bi bi-calendar me-1"></i>{{formatDate .review.CreatedAt}}</small>
+        </div>
+
+        <h2 class="mb-3">{{.review.Title}}</h2>
+
+        {{$images := jsonArray .review.Images}}
+        {{if $images}}
+        <div class="mb-3">
+          <div class="row g-2">
+            {{range $images}}
+            <div class="col-6 col-md-4">
+              <img src="{{.}}" class="img-fluid rounded" style="height: 200px; object-fit: cover; width: 100%;" alt="" />
+            </div>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
+
+        <div class="review-content" style="white-space: pre-wrap;">{{.review.Content}}</div>
+
+        <div class="d-flex align-items-center mt-4 pt-3 border-top">
+          <span class="me-3"><i class="bi bi-heart-fill text-danger me-1"></i>{{.review.LikeCount}} lượt thích</span>
+          {{if .user}}
+          <form method="POST" action="/reviews/{{.review.ID}}/like" class="d-inline">
+            <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+            {{if .has_liked}}
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-heart-fill me-1"></i>Bỏ thích</button>
+            {{else}}
+            <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-heart me-1"></i>Thích</button>
+            {{end}}
+          </form>
+          {{end}}
+        </div>
+      </div>
+    </article>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h5>
+      </div>
+      <div class="card-body">
+        {{if .user}}
+        <form method="POST" action="/reviews/{{.review.ID}}/comments" class="mb-4">
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+          <div class="mb-2">
+            <textarea name="content" class="form-control" rows="3" placeholder="Viết bình luận..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send me-1"></i>Gửi</button>
+        </form>
+        {{else}}
+        <p class="text-muted"><a href="/login">Đăng nhập</a> để bình luận.</p>
+        {{end}}
+
+        {{if .comments}}
+        {{range .comments}}
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <strong>{{if .User}}{{.User.FullName}}{{else}}Ẩn danh{{end}}</strong>
+              <small class="text-muted ms-2">{{formatDate .CreatedAt}}</small>
+            </div>
+            {{if $.user}}
+            {{if eq $.user.ID .UserID}}
+            <form method="POST" action="/comments/{{.ID}}/delete" class="d-inline">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <input type="hidden" name="review_id" value="{{$.review.ID}}" />
+              <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Xóa bình luận này?')"><i class="bi bi-trash"></i></button>
+            </form>
+            {{end}}
+            {{end}}
+          </div>
+          <p class="mb-2 mt-1">{{.Content}}</p>
+
+          {{if .Children}}
+          {{range .Children}}
+          <div class="ms-4 border-start ps-3 mt-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{if .User}}{{.User.FullName}}{{else}}Ẩn danh{{end}}</strong>
+                <small class="text-muted ms-2">{{formatDate .CreatedAt}}</small>
+              </div>
+              {{if $.user}}
+              {{if eq $.user.ID .UserID}}
+              <form method="POST" action="/comments/{{.ID}}/delete" class="d-inline">
+                <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+                <input type="hidden" name="review_id" value="{{$.review.ID}}" />
+                <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Xóa bình luận này?')"><i class="bi bi-trash"></i></button>
+              </form>
+              {{end}}
+              {{end}}
+            </div>
+            <p class="mb-0 mt-1">{{.Content}}</p>
+          </div>
+          {{end}}
+          {{end}}
+
+          {{if $.user}}
+          <div class="mt-2">
+            <button class="btn btn-sm btn-link p-0 toggle-reply" data-target="reply-{{.ID}}"><i class="bi bi-reply me-1"></i>Trả lời</button>
+            <form method="POST" action="/comments/{{.ID}}/reply" class="mt-2 d-none" id="reply-{{.ID}}">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <input type="hidden" name="review_id" value="{{$.review.ID}}" />
+              <div class="input-group input-group-sm">
+                <input type="text" name="content" class="form-control" placeholder="Trả lời..." />
+                <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
+              </div>
+            </form>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+        {{else}}
+        <p class="text-muted">Chưa có bình luận nào.</p>
+        {{end}}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body text-center">
+        <h6>Thông tin bài viết</h6>
+        <hr />
+        <p><i class="bi bi-person me-1"></i>{{if .review.User}}{{.review.User.FullName}}{{end}}</p>
+        <p><i class="bi bi-calendar me-1"></i>{{formatDate .review.CreatedAt}}</p>
+        <p><i class="bi bi-heart-fill text-danger me-1"></i>{{.review.LikeCount}} lượt thích</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.toggle-reply').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var target = document.getElementById(btn.getAttribute('data-target'));
+    if (target) target.classList.toggle('d-none');
+  });
+});
+</script>
+
+{{end}}

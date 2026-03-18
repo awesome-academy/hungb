@@ -65,9 +65,27 @@ const (
 	RouteAdminBookings = "/admin/bookings"
 )
 
-// Defined for template usage only - not used in code
 const (
 	RouteAdminRevenue = "/admin/revenue"
+)
+
+const (
+	RoutePublicReviews      = "/reviews"
+	RoutePublicReviewCreate = "/reviews/create"
+	RouteMyReviews          = "/my/reviews"
+	RouteAdminReviews       = "/admin/reviews"
+)
+
+const (
+	ReviewStatusPending  = "pending"
+	ReviewStatusApproved = "approved"
+	ReviewStatusRejected = "rejected"
+)
+
+const (
+	ReviewTypePlace = "place"
+	ReviewTypeFood  = "food"
+	ReviewTypeNews  = "news"
 )
 
 const (

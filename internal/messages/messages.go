@@ -211,6 +211,63 @@ const (
 	LogAdminRevenueDateParseFailed = "admin: revenue date parse failed"
 )
 
+// ── Public — Review
+const (
+	TitlePublicReviews = "Bài viết đánh giá"
+	TitleReviewCreate  = "Viết bài đánh giá"
+	TitleReviewEdit    = "Chỉnh sửa đánh giá"
+	TitleMyReviews     = "Bài đánh giá của tôi"
+
+	MsgReviewCreated  = "Bài đánh giá đã được gửi và đang chờ duyệt."
+	MsgReviewUpdated  = "Cập nhật bài đánh giá thành công. Bài viết đang chờ duyệt lại."
+	MsgReviewDeleted  = "Xóa bài đánh giá thành công."
+	MsgReviewLiked    = "Đã thích bài đánh giá."
+	MsgReviewUnliked  = "Đã bỏ thích bài đánh giá."
+	MsgCommentAdded   = "Bình luận đã được thêm."
+	MsgCommentDeleted = "Xóa bình luận thành công."
+
+	ErrReviewNotFound    = "Không tìm thấy bài đánh giá."
+	ErrReviewNotOwner    = "Bạn không có quyền thao tác bài đánh giá này."
+	ErrReviewCreateFail  = "Không thể tạo bài đánh giá. Vui lòng thử lại."
+	ErrReviewUpdateFail  = "Không thể cập nhật bài đánh giá."
+	ErrReviewDeleteFail  = "Không thể xóa bài đánh giá."
+	ErrReviewTitleReq    = "Tiêu đề là bắt buộc."
+	ErrReviewContentReq  = "Nội dung là bắt buộc."
+	ErrReviewContentMin  = "Nội dung phải có ít nhất 10 ký tự."
+	ErrReviewInvalidType = "Loại bài viết không hợp lệ."
+	ErrCommentContentReq = "Nội dung bình luận là bắt buộc."
+	ErrCommentNotFound   = "Không tìm thấy bình luận."
+	ErrCommentNotOwner   = "Bạn không có quyền xóa bình luận này."
+	ErrCommentDeleteFail = "Không thể xóa bình luận."
+	ErrLikeFail          = "Không thể thực hiện thao tác."
+
+	LogReviewListFailed       = "public: list reviews failed"
+	LogReviewDetailFailed     = "public: review detail failed"
+	LogReviewCreateFailed     = "public: create review failed"
+	LogReviewUpdateFailed     = "public: update review failed"
+	LogReviewDeleteFailed     = "public: delete review failed"
+	LogReviewMyListFailed     = "public: my reviews failed"
+	LogReviewLikeFailed       = "public: toggle like failed"
+	LogReviewCommentFailed    = "public: add comment failed"
+	LogReviewDelCommentFailed = "public: delete comment failed"
+)
+
+// ── Admin — Review
+const (
+	TitleAdminReviews = "Quản lý đánh giá"
+
+	MsgAdminReviewApproved = "Duyệt bài đánh giá thành công."
+	MsgAdminReviewRejected = "Từ chối bài đánh giá thành công."
+
+	ErrAdminReviewNotFound    = "Không tìm thấy bài đánh giá."
+	ErrAdminReviewApproveFail = "Không thể duyệt bài đánh giá."
+	ErrAdminReviewRejectFail  = "Không thể từ chối bài đánh giá."
+
+	LogAdminReviewListFailed    = "admin: list reviews failed"
+	LogAdminReviewApproveFailed = "admin: approve review failed"
+	LogAdminReviewRejectFailed  = "admin: reject review failed"
+)
+
 // ── Public — Booking
 const (
 	TitleBooking             = "Đặt tour"

@@ -1,0 +1,156 @@
+{{template "admin_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-journal-richtext me-2"></i>Quản lý đánh giá</h2>
+  <span class="text-muted">Tổng: {{.total}} bài đánh giá</span>
+</div>
+
+<form method="GET" action="/admin/reviews" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          <option value="pending" {{if eq .filter.Status "pending"}}selected{{end}}>Chờ duyệt</option>
+          <option value="approved" {{if eq .filter.Status "approved"}}selected{{end}}>Đã duyệt</option>
+          <option value="rejected" {{if eq .filter.Status "rejected"}}selected{{end}}>Bị từ chối</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Loại</label>
+        <select name="type" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          <option value="place" {{if eq .filter.Type "place"}}selected{{end}}>Địa điểm</option>
+          <option value="food" {{if eq .filter.Type "food"}}selected{{end}}>Ẩm thực</option>
+          <option value="news" {{if eq .filter.Type "news"}}selected{{end}}>Tin tức</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">User ID</label>
+        <input type="number" name="user_id" class="form-control form-control-sm"
+               value="{{if gt .filter.UserID 0}}{{.filter.UserID}}{{end}}" placeholder="ID" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Từ khóa</label>
+        <input type="text" name="keyword" class="form-control form-control-sm"
+               value="{{.filter.Keyword}}" placeholder="Tìm tiêu đề, nội dung..." />
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a href="/admin/reviews" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+{{if .reviews}}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Mã</th>
+        <th>Tiêu đề</th>
+        <th>Tác giả</th>
+        <th>Loại</th>
+        <th>Trạng thái</th>
+        <th>Lượt thích</th>
+        <th>Ngày tạo</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .reviews}}
+      <tr>
+        <td><strong>#{{.ID}}</strong></td>
+        <td>
+          <a href="/reviews/{{.ID}}" target="_blank" class="text-decoration-none">
+            {{if gt (len .Title) 50}}{{slice .Title 0 50}}...{{else}}{{.Title}}{{end}}
+          </a>
+        </td>
+        <td>
+          {{if .User}}
+          <span title="{{.User.Email}}">{{.User.FullName}}</span>
+          <br /><small class="text-muted">{{.User.Email}}</small>
+          {{else}}—{{end}}
+        </td>
+        <td>
+          {{if eq .Type "place"}}<span class="badge bg-success">Địa điểm</span>
+          {{else if eq .Type "food"}}<span class="badge bg-warning text-dark">Ẩm thực</span>
+          {{else}}<span class="badge bg-info text-dark">Tin tức</span>{{end}}
+        </td>
+        <td>
+          {{if eq .Status "pending"}}<span class="badge bg-secondary">Chờ duyệt</span>
+          {{else if eq .Status "approved"}}<span class="badge bg-success">Đã duyệt</span>
+          {{else}}<span class="badge bg-danger">Bị từ chối</span>{{end}}
+        </td>
+        <td><i class="bi bi-heart-fill text-danger me-1"></i>{{.LikeCount}}</td>
+        <td>{{formatDate .CreatedAt}}</td>
+        <td>
+          <div class="d-flex gap-1">
+            {{if eq .Status "pending"}}
+            <form method="POST" action="/admin/reviews/{{.ID}}/approve" class="d-inline">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-success" title="Duyệt">
+                <i class="bi bi-check-lg"></i>
+              </button>
+            </form>
+            <form method="POST" action="/admin/reviews/{{.ID}}/reject" class="d-inline"
+                  onsubmit="return confirm('Bạn có chắc muốn từ chối bài #{{.ID}}?');">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-danger" title="Từ chối">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+            {{else if eq .Status "approved"}}
+            <form method="POST" action="/admin/reviews/{{.ID}}/reject" class="d-inline"
+                  onsubmit="return confirm('Bạn có chắc muốn từ chối bài #{{.ID}}?');">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-danger" title="Từ chối">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+            {{else if eq .Status "rejected"}}
+            <form method="POST" action="/admin/reviews/{{.ID}}/approve" class="d-inline">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-success" title="Duyệt">
+                <i class="bi bi-check-lg"></i>
+              </button>
+            </form>
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{if gt .total_pages 1}}
+<nav aria-label="Phân trang">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{if le .page 1}}disabled{{end}}">
+      <a class="page-link" href="/admin/reviews?page={{add .page -1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if .filter.Type}}&type={{.filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{.filter.Keyword}}{{end}}">«</a>
+    </li>
+    {{$currentPage := .page}}
+    {{$filter := .filter}}
+    {{range seq .total_pages}}
+    <li class="page-item {{if eq . $currentPage}}active{{end}}">
+      <a class="page-link" href="/admin/reviews?page={{.}}{{if $filter.Status}}&status={{$filter.Status}}{{end}}{{if $filter.Type}}&type={{$filter.Type}}{{end}}{{if gt $filter.UserID 0}}&user_id={{$filter.UserID}}{{end}}{{if $filter.Keyword}}&keyword={{$filter.Keyword}}{{end}}">{{.}}</a>
+    </li>
+    {{end}}
+    <li class="page-item {{if ge .page .total_pages}}disabled{{end}}">
+      <a class="page-link" href="/admin/reviews?page={{add .page 1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if .filter.Type}}&type={{.filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{.filter.Keyword}}{{end}}">»</a>
+    </li>
+  </ul>
+</nav>
+{{end}}
+
+{{else}}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-journal-x d-block fs-1 mb-2"></i>
+  <p>Không có bài đánh giá nào.</p>
+</div>
+{{end}}
+{{end}}
