@@ -45,6 +45,7 @@ type RevenueRepo interface {
 	BookingsByStatus(ctx context.Context, filter RevenueFilter) ([]BookingStatusCount, error)
 }
 
+// revenueRepository requires PostgreSQL
 type revenueRepository struct {
 	db *gorm.DB
 }
@@ -74,11 +75,14 @@ func (r *revenueRepository) applyPaymentFilter(query *gorm.DB, filter RevenueFil
 }
 
 func (r *revenueRepository) applyBookingFilter(query *gorm.DB, filter RevenueFilter) *gorm.DB {
-	if !filter.DateFrom.IsZero() {
-		query = query.Where("bookings.created_at >= ?", filter.DateFrom)
-	}
-	if !filter.DateTo.IsZero() {
-		query = query.Where("bookings.created_at <= ?", filter.DateTo)
+	if !filter.DateFrom.IsZero() || !filter.DateTo.IsZero() {
+		query = query.Joins("JOIN payments ON payments.booking_id = bookings.id AND payments.status = ?", constants.PaymentStatusSuccess)
+		if !filter.DateFrom.IsZero() {
+			query = query.Where("payments.paid_at >= ?", filter.DateFrom)
+		}
+		if !filter.DateTo.IsZero() {
+			query = query.Where("payments.paid_at <= ?", filter.DateTo)
+		}
 	}
 	if filter.TourID > 0 {
 		query = query.Where("bookings.tour_id = ?", filter.TourID)
@@ -124,7 +128,7 @@ func (r *revenueRepository) MonthlyBreakdown(ctx context.Context, filter Revenue
 
 	if err := query.
 		Select("TO_CHAR(payments.paid_at, 'YYYY-MM') AS month, COUNT(*) AS payment_count, COALESCE(SUM(amount), 0) AS total").
-		Group("month").
+		Group("TO_CHAR(payments.paid_at, 'YYYY-MM')").
 		Order("month DESC").
 		Limit(12).
 		Find(&results).Error; err != nil {
