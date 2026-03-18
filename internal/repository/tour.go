@@ -34,6 +34,7 @@ type TourRepo interface {
 	FindByID(ctx context.Context, id uint) (*models.Tour, error)
 	FindBySlug(ctx context.Context, slug string) (*models.Tour, error)
 	FindBySlugPublic(ctx context.Context, slug string) (*models.Tour, error)
+	FindByIDPublic(ctx context.Context, id uint) (*models.Tour, error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	ExistsBySlugExcluding(ctx context.Context, slug string, excludeID uint) (bool, error)
 	Create(ctx context.Context, tour *models.Tour) error
@@ -73,7 +74,7 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 	}
 	if filter.Search != "" {
 		like := "%" + filter.Search + "%"
-		query = query.Where("(title ILIKE ? OR description ILIKE ? OR location ILIKE ?)", like, like, like)
+		query = query.Where("title ILIKE ? OR description ILIKE ? OR location ILIKE ?", like, like, like)
 	}
 	if filter.MinPrice > 0 {
 		query = query.Where("price >= ?", filter.MinPrice)
@@ -116,25 +117,23 @@ func (r *tourRepository) FindAll(ctx context.Context, filter TourFilter) ([]mode
 		sortDir = "ASC"
 	}
 
-	if err := query.
-		Preload("Categories").
+	findQuery := query.
+		Preload("Categories")
+	if filter.IncludeSchedules {
+		now := time.Now()
+		startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		findQuery = findQuery.Preload("Schedules", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, startOfDay).
+				Order("departure_date ASC")
+		})
+	}
+	if err := findQuery.
 		Order(sortCol + " " + sortDir).
 		Limit(filter.Limit).
 		Offset(offset).
 		Find(&tours).Error; err != nil {
 		return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
-	}
-
-	if filter.IncludeSchedules {
-		for i := range tours {
-			if err := r.db.WithContext(ctx).
-				Where("tour_id = ? AND status = ? AND departure_date >= ?",
-					tours[i].ID, constants.ScheduleStatusOpen, time.Now()).
-				Order("departure_date ASC").
-				Find(&tours[i].Schedules).Error; err != nil {
-				return nil, 0, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindAll, err)
-			}
-		}
 	}
 	return tours, total, nil
 }
@@ -222,17 +221,37 @@ func (r *tourRepository) ReplaceCategories(ctx context.Context, tour *models.Tou
 }
 
 func (r *tourRepository) FindBySlugPublic(ctx context.Context, slug string) (*models.Tour, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	var tour models.Tour
 	if err := r.db.WithContext(ctx).
 		Preload("Categories").
 		Preload("Schedules", func(db *gorm.DB) *gorm.DB {
 			return db.
-				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, time.Now()).
+				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, startOfDay).
 				Order("departure_date ASC")
 		}).
 		Where("slug = ? AND status = ?", slug, constants.TourStatusActive).
 		First(&tour).Error; err != nil {
 		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourFindBySlug, err)
+	}
+	return &tour, nil
+}
+
+func (r *tourRepository) FindByIDPublic(ctx context.Context, id uint) (*models.Tour, error) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	var tour models.Tour
+	if err := r.db.WithContext(ctx).
+		Preload("Categories").
+		Preload("Schedules", func(db *gorm.DB) *gorm.DB {
+			return db.
+				Where("status = ? AND departure_date >= ?", constants.ScheduleStatusOpen, startOfDay).
+				Order("departure_date ASC")
+		}).
+		Where("status = ?", constants.TourStatusActive).
+		First(&tour, id).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourFindByID, err)
 	}
 	return &tour, nil
 }

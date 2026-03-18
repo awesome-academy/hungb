@@ -1,0 +1,163 @@
+{{template "admin_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-journal-bookmark me-2"></i>Quản lý đặt tour</h2>
+  <span class="text-muted">Tổng: {{.total}} đặt tour</span>
+</div>
+
+<form method="GET" action="/admin/bookings" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          <option value="pending" {{if eq .filter.Status "pending"}}selected{{end}}>Chờ xác nhận</option>
+          <option value="confirmed" {{if eq .filter.Status "confirmed"}}selected{{end}}>Đã xác nhận</option>
+          <option value="cancelled" {{if eq .filter.Status "cancelled"}}selected{{end}}>Đã hủy</option>
+          <option value="completed" {{if eq .filter.Status "completed"}}selected{{end}}>Hoàn thành</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">User ID</label>
+        <input type="number" name="user_id" class="form-control form-control-sm"
+               value="{{if gt .filter.UserID 0}}{{.filter.UserID}}{{end}}" placeholder="ID" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tour ID</label>
+        <input type="number" name="tour_id" class="form-control form-control-sm"
+               value="{{if gt .filter.TourID 0}}{{.filter.TourID}}{{end}}" placeholder="ID" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Từ ngày</label>
+        <input type="date" name="date_from" class="form-control form-control-sm"
+               value="{{if not .filter.DateFrom.IsZero}}{{formatDateInput .filter.DateFrom}}{{end}}" />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Đến ngày</label>
+        <input type="date" name="date_to" class="form-control form-control-sm"
+               value="{{if not .filter.DateTo.IsZero}}{{formatDateInput .filter.DateTo}}{{end}}" />
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a href="/admin/bookings" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+{{if .bookings}}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Mã</th>
+        <th>Khách hàng</th>
+        <th>Tour</th>
+        <th>Ngày KH</th>
+        <th>Số người</th>
+        <th>Tổng tiền</th>
+        <th>Trạng thái</th>
+        <th>Ngày đặt</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .bookings}}
+      <tr>
+        <td><strong>#{{.ID}}</strong></td>
+        <td>
+          {{if .User}}
+          <span title="{{.User.Email}}">{{.User.FullName}}</span>
+          <br /><small class="text-muted">{{.User.Email}}</small>
+          {{else}}
+          —
+          {{end}}
+        </td>
+        <td>
+          {{if .Tour}}{{.Tour.Title}}{{else}}—{{end}}
+        </td>
+        <td>
+          {{if .Schedule}}{{formatDate .Schedule.DepartureDate}}{{else}}—{{end}}
+        </td>
+        <td>{{.NumParticipants}}</td>
+        <td class="fw-semibold">{{formatPrice .TotalPrice}}</td>
+        <td>
+          {{if eq .Status "pending"}}
+          <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+          {{else if eq .Status "confirmed"}}
+          <span class="badge bg-success">Đã xác nhận</span>
+          {{else if eq .Status "cancelled"}}
+          <span class="badge bg-danger">Đã hủy</span>
+          {{else if eq .Status "completed"}}
+          <span class="badge bg-info">Hoàn thành</span>
+          {{end}}
+        </td>
+        <td>{{formatDate .CreatedAt}}</td>
+        <td>
+          <div class="d-flex gap-1">
+            {{if eq .Status "pending"}}
+            <form method="POST" action="/admin/bookings/{{.ID}}/confirm" class="d-inline">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-success" title="Xác nhận">
+                <i class="bi bi-check-lg"></i>
+              </button>
+            </form>
+            <form method="POST" action="/admin/bookings/{{.ID}}/cancel" class="d-inline"
+                  onsubmit="return confirm('Bạn có chắc muốn hủy đặt tour #{{.ID}}?');">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-danger" title="Hủy">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+            {{else if eq .Status "confirmed"}}
+            <form method="POST" action="/admin/bookings/{{.ID}}/complete" class="d-inline">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-info" title="Hoàn thành">
+                <i class="bi bi-check-circle"></i>
+              </button>
+            </form>
+            <form method="POST" action="/admin/bookings/{{.ID}}/cancel" class="d-inline"
+                  onsubmit="return confirm('Bạn có chắc muốn hủy đặt tour #{{.ID}}?');">
+              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+              <button type="submit" class="btn btn-sm btn-danger" title="Hủy">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </form>
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{if gt .total_pages 1}}
+<nav aria-label="Phân trang">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{if le .page 1}}disabled{{end}}">
+      <a class="page-link" href="/admin/bookings?page={{add .page -1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if gt .filter.TourID 0}}&tour_id={{.filter.TourID}}{{end}}{{if not .filter.DateFrom.IsZero}}&date_from={{formatDateInput .filter.DateFrom}}{{end}}{{if not .filter.DateTo.IsZero}}&date_to={{formatDateInput .filter.DateTo}}{{end}}">‹</a>
+    </li>
+    {{$currentPage := .page}}
+    {{$filter := .filter}}
+    {{range seq .total_pages}}
+    <li class="page-item {{if eq . $currentPage}}active{{end}}">
+      <a class="page-link" href="/admin/bookings?page={{.}}{{if $filter.Status}}&status={{$filter.Status}}{{end}}{{if gt $filter.UserID 0}}&user_id={{$filter.UserID}}{{end}}{{if gt $filter.TourID 0}}&tour_id={{$filter.TourID}}{{end}}{{if not $filter.DateFrom.IsZero}}&date_from={{formatDateInput $filter.DateFrom}}{{end}}{{if not $filter.DateTo.IsZero}}&date_to={{formatDateInput $filter.DateTo}}{{end}}">{{.}}</a>
+    </li>
+    {{end}}
+    <li class="page-item {{if ge .page .total_pages}}disabled{{end}}">
+      <a class="page-link" href="/admin/bookings?page={{add .page 1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if gt .filter.TourID 0}}&tour_id={{.filter.TourID}}{{end}}{{if not .filter.DateFrom.IsZero}}&date_from={{formatDateInput .filter.DateFrom}}{{end}}{{if not .filter.DateTo.IsZero}}&date_to={{formatDateInput .filter.DateTo}}{{end}}">›</a>
+    </li>
+  </ul>
+</nav>
+{{end}}
+
+{{else}}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-journal-x d-block fs-1 mb-2"></i>
+  <p>Không có đặt tour nào.</p>
+</div>
+{{end}}
+{{end}}

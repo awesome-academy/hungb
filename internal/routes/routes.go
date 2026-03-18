@@ -45,6 +45,11 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	tourService := services.NewTourService(tourRepo, catRepo)
 	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService)
 
+	scheduleRepo := repository.NewScheduleRepository(db)
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingService := services.NewBookingService(db, bookingRepo, scheduleRepo)
+	bookingHandler := publicHandlers.NewBookingHandler(bookingService, tourService)
+
 	public := router.Group("/")
 	public.Use(middleware.LoadCategories(catRepo))
 	{
@@ -80,6 +85,12 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		auth.POST("/bank-accounts/:id/edit", bankAccountHandler.Update)
 		auth.POST("/bank-accounts/:id/delete", bankAccountHandler.Delete)
 		auth.POST("/bank-accounts/:id/set-default", bankAccountHandler.SetDefault)
+
+		auth.GET("/tours/:slug/book", bookingHandler.Form)
+		auth.POST("/tours/:slug/book", bookingHandler.Create)
+		auth.GET("/my/bookings", bookingHandler.MyList)
+		auth.GET("/my/bookings/:id", bookingHandler.Detail)
+		auth.POST("/my/bookings/:id/cancel", bookingHandler.Cancel)
 	}
 }
 
@@ -99,6 +110,10 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 	scheduleRepo := repository.NewScheduleRepository(db)
 	scheduleService := services.NewScheduleService(scheduleRepo, tourRepo)
 	scheduleHandler := adminHandlers.NewScheduleHandler(scheduleService, tourService)
+
+	bookingRepo := repository.NewBookingRepository(db)
+	bookingService := services.NewBookingService(db, bookingRepo, scheduleRepo)
+	adminBookingHandler := adminHandlers.NewBookingHandler(bookingService)
 
 	admin := router.Group("/admin")
 	{
@@ -132,6 +147,11 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.GET("/schedules/:id/edit", scheduleHandler.EditForm)
 		adminAuth.POST("/schedules/:id/edit", scheduleHandler.Update)
 		adminAuth.POST("/schedules/:id/delete", scheduleHandler.Delete)
+
+		adminAuth.GET("/bookings", adminBookingHandler.List)
+		adminAuth.POST("/bookings/:id/confirm", adminBookingHandler.Confirm)
+		adminAuth.POST("/bookings/:id/cancel", adminBookingHandler.Cancel)
+		adminAuth.POST("/bookings/:id/complete", adminBookingHandler.Complete)
 	}
 }
 

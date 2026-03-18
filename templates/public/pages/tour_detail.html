@@ -104,7 +104,7 @@
               </td>
               <td>
                 {{if $user}}
-                <a href="/tours/{{$tour.ID}}/book?schedule_id={{.ID}}"
+                <a href="/tours/{{$tour.Slug}}/book?schedule_id={{.ID}}"
                    class="btn btn-sm btn-primary">
                   <i class="bi bi-bag-check me-1"></i>Đặt tour
                 </a>
@@ -161,7 +161,7 @@
 
         {{if $user}}
         {{if $tour.Schedules}}
-        <a href="/tours/{{$tour.ID}}/book"
+        <a href="/tours/{{$tour.Slug}}/book"
            class="btn btn-primary w-100">
           <i class="bi bi-bag-check me-1"></i>Đặt tour ngay
         </a>

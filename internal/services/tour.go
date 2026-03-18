@@ -228,6 +228,17 @@ func (s *TourService) GetPublicTourBySlug(ctx context.Context, slug string) (*mo
 	return tour, ratingCount, nil
 }
 
+func (s *TourService) GetPublicTourByID(ctx context.Context, id uint) (*models.Tour, error) {
+	tour, err := s.repo.FindByIDPublic(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErrors.ErrTourNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourDetail, err)
+	}
+	return tour, nil
+}
+
 func filterNonEmpty(ss []string) []string {
 	result := make([]string, 0, len(ss))
 	for _, s := range ss {

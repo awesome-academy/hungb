@@ -98,6 +98,7 @@ const (
 
 const (
 	ErrCtxPublicTourFindBySlug   = "public find tour by slug"
+	ErrCtxPublicTourFindByID     = "public find tour by id"
 	ErrCtxPublicTourCountRatings = "public count tour ratings"
 	ErrCtxPublicTourDetail       = "public get tour detail"
 )
@@ -191,13 +192,37 @@ const (
 	ErrCtxBankAccountSetDefault   = "set default bank account"
 )
 
+const (
+	ErrCtxBookingCreate       = "create booking"
+	ErrCtxBookingFindByID     = "find booking by id"
+	ErrCtxBookingFindByUser   = "find bookings by user"
+	ErrCtxBookingCount        = "count bookings by user"
+	ErrCtxBookingUpdateStatus = "update booking status"
+	ErrCtxScheduleUpdateSlots = "update schedule available slots"
+)
+
+const (
+	ErrCtxBookingServiceCreate   = "booking service create"
+	ErrCtxBookingServiceGet      = "booking service get"
+	ErrCtxBookingServiceList     = "booking service list"
+	ErrCtxBookingServiceCancel   = "booking service cancel"
+	ErrCtxBookingServiceConfirm  = "booking service confirm"
+	ErrCtxBookingServiceComplete = "booking service complete"
+)
+
+const (
+	ErrCtxBookingFindAll  = "find all bookings"
+	ErrCtxBookingCountAll = "count all bookings"
+)
+
 // Booking
 var (
-	ErrBookingNotFound  = NewAppError(http.StatusNotFound, "booking not found")
-	ErrBookingFull      = NewAppError(http.StatusBadRequest, "no available slots")
-	ErrBookingCancelled = NewAppError(http.StatusBadRequest, "booking already cancelled")
-	ErrBookingCompleted = NewAppError(http.StatusBadRequest, "booking already completed")
-	ErrInvalidBooking   = NewAppError(http.StatusBadRequest, "invalid booking")
+	ErrBookingNotFound       = NewAppError(http.StatusNotFound, "booking not found")
+	ErrScheduleNotOpen       = NewAppError(http.StatusBadRequest, "schedule is not open for booking")
+	ErrNotEnoughSlots        = NewAppError(http.StatusBadRequest, "not enough available slots")
+	ErrBookingCannotCancel   = NewAppError(http.StatusBadRequest, "booking cannot be cancelled")
+	ErrBookingCannotConfirm  = NewAppError(http.StatusBadRequest, "booking cannot be confirmed")
+	ErrBookingCannotComplete = NewAppError(http.StatusBadRequest, "booking cannot be completed")
 )
 
 // Payment

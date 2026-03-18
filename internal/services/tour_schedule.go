@@ -169,5 +169,5 @@ func isValidScheduleStatus(status string) bool {
 }
 
 func parseDate(s string) (time.Time, error) {
-	return time.Parse("2006-01-02", s)
+	return time.ParseInLocation("2006-01-02", s, time.Local)
 }
