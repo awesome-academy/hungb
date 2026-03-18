@@ -231,6 +231,16 @@ var (
 	ErrPaymentFailed   = NewAppError(http.StatusBadRequest, "payment failed")
 )
 
+const (
+	ErrCtxRevenueTotalRevenue     = "revenue total"
+	ErrCtxRevenueTotalBookings    = "revenue total bookings"
+	ErrCtxRevenueSuccessPayments  = "revenue success payments"
+	ErrCtxRevenueMonthlyBreakdown = "revenue monthly breakdown"
+	ErrCtxRevenueByTour           = "revenue by tour"
+	ErrCtxRevenueBookingsByStatus = "revenue bookings by status"
+	ErrCtxRevenueServiceGet       = "revenue service get"
+)
+
 // Review & Rating
 var (
 	ErrReviewNotFound  = NewAppError(http.StatusNotFound, "review not found")

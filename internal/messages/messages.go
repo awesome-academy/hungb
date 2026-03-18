@@ -201,6 +201,16 @@ const (
 	LogAdminBookingCompleteFailed = "admin: complete booking failed"
 )
 
+// ── Admin — Revenue
+const (
+	TitleAdminRevenue = "Báo cáo doanh thu"
+
+	ErrRevenueLoadFailed = "Không thể tải dữ liệu doanh thu. Vui lòng thử lại sau."
+
+	LogAdminRevenueLoadFailed      = "admin: load revenue failed"
+	LogAdminRevenueDateParseFailed = "admin: revenue date parse failed"
+)
+
 // ── Public — Booking
 const (
 	TitleBooking             = "Đặt tour"

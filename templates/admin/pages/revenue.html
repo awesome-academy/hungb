@@ -1,0 +1,216 @@
+{{template "admin_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-graph-up me-2"></i>{{.title}}</h2>
+</div>
+
+<form method="GET" action="/admin/revenue" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Từ ngày</label>
+        <input type="date" name="date_from" class="form-control form-control-sm"
+               value="{{if not .filter.DateFrom.IsZero}}{{formatDateInput .filter.DateFrom}}{{end}}" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Đến ngày</label>
+        <input type="date" name="date_to" class="form-control form-control-sm"
+               value="{{if not .filter.DateTo.IsZero}}{{formatDateInput .filter.DateTo}}{{end}}" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Tour ID</label>
+        <input type="number" name="tour_id" class="form-control form-control-sm"
+               value="{{if gt .filter.TourID 0}}{{.filter.TourID}}{{end}}" placeholder="ID" />
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a href="/admin/revenue" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
+  <div class="col">
+    <div class="card text-bg-primary shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-uppercase small opacity-75 mb-1">Tổng doanh thu</div>
+            <h4 class="card-title mb-0">{{formatPrice .stats.TotalRevenue}}</h4>
+          </div>
+          <i class="bi bi-cash-stack fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-bg-success shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-uppercase small opacity-75 mb-1">Tổng đặt tour</div>
+            <h4 class="card-title mb-0">{{.stats.TotalBookings}}</h4>
+          </div>
+          <i class="bi bi-journal-bookmark fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-bg-info shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-uppercase small opacity-75 mb-1">Thanh toán thành công</div>
+            <h4 class="card-title mb-0">{{.stats.SuccessPayments}}</h4>
+          </div>
+          <i class="bi bi-credit-card-2-front fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-bg-warning shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-uppercase small opacity-75 mb-1">Giá trị TB/đặt tour</div>
+            <h4 class="card-title mb-0">{{formatPrice .stats.AvgBookingValue}}</h4>
+          </div>
+          <i class="bi bi-bar-chart fs-1 opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-calendar3 me-2 text-primary"></i>Doanh thu theo tháng</h6>
+      </div>
+      <div class="card-body p-0">
+        {{if .stats.MonthlyBreakdown}}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Tháng</th>
+                <th>Số thanh toán</th>
+                <th>Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .stats.MonthlyBreakdown}}
+              <tr>
+                <td class="ps-3">{{.Month}}</td>
+                <td>{{.PaymentCount}}</td>
+                <td class="fw-semibold">{{formatPrice .Total}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+          Chưa có dữ liệu.
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-pie-chart me-2 text-warning"></i>Đặt tour theo trạng thái</h6>
+      </div>
+      <div class="card-body p-0">
+        {{if .stats.BookingsByStatus}}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Trạng thái</th>
+                <th>Số lượng</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .stats.BookingsByStatus}}
+              <tr>
+                <td class="ps-3">
+                  {{if eq .Status "pending"}}
+                  <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+                  {{else if eq .Status "confirmed"}}
+                  <span class="badge bg-info">Đã xác nhận</span>
+                  {{else if eq .Status "completed"}}
+                  <span class="badge bg-success">Hoàn thành</span>
+                  {{else if eq .Status "cancelled"}}
+                  <span class="badge bg-danger">Đã hủy</span>
+                  {{else}}
+                  <span class="badge bg-secondary">{{.Status}}</span>
+                  {{end}}
+                </td>
+                <td class="fw-semibold">{{.Count}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-clipboard-x fs-2 d-block mb-2"></i>
+          Chưa có dữ liệu.
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-trophy me-2 text-success"></i>Tour có doanh thu cao nhất</h6>
+      </div>
+      <div class="card-body p-0">
+        {{if .stats.TopTours}}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Tên tour</th>
+                <th>Số booking</th>
+                <th>Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range $i, $t := .stats.TopTours}}
+              <tr>
+                <td class="ps-3 text-muted">{{add $i 1}}</td>
+                <td>{{$t.TourTitle}}</td>
+                <td>{{$t.BookingCount}}</td>
+                <td class="fw-semibold">{{formatPrice $t.Total}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-trophy fs-2 d-block mb-2"></i>
+          Chưa có dữ liệu.
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{end}}
