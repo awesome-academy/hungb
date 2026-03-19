@@ -44,27 +44,27 @@
   {{range .reviews}}
   <div class="col">
     <div class="card h-100 shadow-sm">
-      {{$images := jsonArray .Images}}
-      {{if $images}}
-      <img src="{{index $images 0}}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{.Title}}" />
-      {{end}}
-      <div class="card-body">
-        <div class="mb-2">
-          {{if eq .Type "place"}}
-          <span class="badge bg-primary">Địa điểm</span>
-          {{else if eq .Type "food"}}
-          <span class="badge bg-success">Ẩm thực</span>
-          {{else if eq .Type "news"}}
-          <span class="badge bg-info">Tin tức</span>
-          {{end}}
+      <a href="/reviews/{{.ID}}" class="text-decoration-none text-dark">
+        {{$images := jsonArray .Images}}
+        {{if $images}}
+        <img src="{{index $images 0}}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{.Title}}" />
+        {{end}}
+        <div class="card-body">
+          <div class="mb-2">
+            {{if eq .Type "place"}}
+            <span class="badge bg-primary">Địa điểm</span>
+            {{else if eq .Type "food"}}
+            <span class="badge bg-success">Ẩm thực</span>
+            {{else if eq .Type "news"}}
+            <span class="badge bg-info">Tin tức</span>
+            {{end}}
+          </div>
+          <h5 class="card-title">{{.Title}}</h5>
+          <p class="card-text text-muted small">
+            {{if gt (len .Content) 150}}{{slice .Content 0 150}}...{{else}}{{.Content}}{{end}}
+          </p>
         </div>
-        <h5 class="card-title">
-          <a href="/reviews/{{.ID}}" class="text-decoration-none text-dark">{{.Title}}</a>
-        </h5>
-        <p class="card-text text-muted small">
-          {{if gt (len .Content) 150}}{{slice .Content 0 150}}...{{else}}{{.Content}}{{end}}
-        </p>
-      </div>
+      </a>
       <div class="card-footer bg-white d-flex justify-content-between align-items-center">
         <small class="text-muted">
           {{if .User}}<i class="bi bi-person me-1"></i>{{.User.FullName}}{{end}}
@@ -84,15 +84,15 @@
 <nav>
   <ul class="pagination justify-content-center">
     <li class="page-item {{if le $p.Page 1}}disabled{{end}}">
-      <a class="page-link" href="/reviews?page={{$p.PrevPage}}&type={{$.filter.Type}}&q={{$.filter.Keyword}}&sort={{$.filter.Sort}}">«</a>
+      <a class="page-link" href="/reviews?page={{$p.PrevPage}}&type={{urlquery $.filter.Type}}&q={{urlquery $.filter.Keyword}}&sort={{urlquery $.filter.Sort}}">«</a>
     </li>
     {{range $p.Pages}}
     <li class="page-item {{if eq . $p.Page}}active{{end}}">
-      <a class="page-link" href="/reviews?page={{.}}&type={{$.filter.Type}}&q={{$.filter.Keyword}}&sort={{$.filter.Sort}}">{{.}}</a>
+      <a class="page-link" href="/reviews?page={{.}}&type={{urlquery $.filter.Type}}&q={{urlquery $.filter.Keyword}}&sort={{urlquery $.filter.Sort}}">{{.}}</a>
     </li>
     {{end}}
     <li class="page-item {{if ge $p.Page $p.TotalPages}}disabled{{end}}">
-      <a class="page-link" href="/reviews?page={{$p.NextPage}}&type={{$.filter.Type}}&q={{$.filter.Keyword}}&sort={{$.filter.Sort}}">»</a>
+      <a class="page-link" href="/reviews?page={{$p.NextPage}}&type={{urlquery $.filter.Type}}&q={{urlquery $.filter.Keyword}}&sort={{urlquery $.filter.Sort}}">»</a>
     </li>
   </ul>
 </nav>

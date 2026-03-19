@@ -131,17 +131,17 @@
 <nav aria-label="Phân trang">
   <ul class="pagination justify-content-center">
     <li class="page-item {{if le .page 1}}disabled{{end}}">
-      <a class="page-link" href="/admin/reviews?page={{add .page -1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if .filter.Type}}&type={{.filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{.filter.Keyword}}{{end}}">«</a>
+      <a class="page-link" href="/admin/reviews?page={{add .page -1}}{{if .filter.Status}}&status={{urlquery .filter.Status}}{{end}}{{if .filter.Type}}&type={{urlquery .filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{urlquery .filter.Keyword}}{{end}}">«</a>
     </li>
     {{$currentPage := .page}}
     {{$filter := .filter}}
     {{range seq .total_pages}}
     <li class="page-item {{if eq . $currentPage}}active{{end}}">
-      <a class="page-link" href="/admin/reviews?page={{.}}{{if $filter.Status}}&status={{$filter.Status}}{{end}}{{if $filter.Type}}&type={{$filter.Type}}{{end}}{{if gt $filter.UserID 0}}&user_id={{$filter.UserID}}{{end}}{{if $filter.Keyword}}&keyword={{$filter.Keyword}}{{end}}">{{.}}</a>
+      <a class="page-link" href="/admin/reviews?page={{.}}{{if $filter.Status}}&status={{urlquery $filter.Status}}{{end}}{{if $filter.Type}}&type={{urlquery $filter.Type}}{{end}}{{if gt $filter.UserID 0}}&user_id={{$filter.UserID}}{{end}}{{if $filter.Keyword}}&keyword={{urlquery $filter.Keyword}}{{end}}">{{.}}</a>
     </li>
     {{end}}
     <li class="page-item {{if ge .page .total_pages}}disabled{{end}}">
-      <a class="page-link" href="/admin/reviews?page={{add .page 1}}{{if .filter.Status}}&status={{.filter.Status}}{{end}}{{if .filter.Type}}&type={{.filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{.filter.Keyword}}{{end}}">»</a>
+      <a class="page-link" href="/admin/reviews?page={{add .page 1}}{{if .filter.Status}}&status={{urlquery .filter.Status}}{{end}}{{if .filter.Type}}&type={{urlquery .filter.Type}}{{end}}{{if gt .filter.UserID 0}}&user_id={{.filter.UserID}}{{end}}{{if .filter.Keyword}}&keyword={{urlquery .filter.Keyword}}{{end}}">»</a>
     </li>
   </ul>
 </nav>

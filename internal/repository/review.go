@@ -42,6 +42,7 @@ type CommentRepo interface {
 
 type ReviewLikeRepo interface {
 	Exists(ctx context.Context, userID, reviewID uint) (bool, error)
+	FindByUserAndReviewIDs(ctx context.Context, userID uint, reviewIDs []uint) ([]uint, error)
 	Create(ctx context.Context, like *models.ReviewLike) error
 	Delete(ctx context.Context, userID, reviewID uint) error
 }
@@ -279,6 +280,19 @@ func (r *reviewLikeRepository) Exists(ctx context.Context, userID, reviewID uint
 		return false, fmt.Errorf("%s: %w", appErrors.ErrCtxLikeCheck, err)
 	}
 	return count > 0, nil
+}
+
+func (r *reviewLikeRepository) FindByUserAndReviewIDs(ctx context.Context, userID uint, reviewIDs []uint) ([]uint, error) {
+	if len(reviewIDs) == 0 || userID == 0 {
+		return nil, nil
+	}
+	var likedIDs []uint
+	if err := r.db.WithContext(ctx).Model(&models.ReviewLike{}).
+		Where("user_id = ? AND review_id IN ?", userID, reviewIDs).
+		Pluck("review_id", &likedIDs).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxLikeCheck, err)
+	}
+	return likedIDs, nil
 }
 
 func (r *reviewLikeRepository) Create(ctx context.Context, like *models.ReviewLike) error {

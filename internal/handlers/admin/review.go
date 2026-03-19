@@ -31,10 +31,11 @@ func (h *ReviewHandler) List(c *gin.Context) {
 	}
 
 	filter := repository.ReviewFilter{
-		Status: c.Query("status"),
-		Type:   c.Query("type"),
-		Page:   page,
-		Limit:  constants.DefaultPageLimit,
+		Status:  c.Query("status"),
+		Type:    c.Query("type"),
+		Keyword: c.Query("keyword"),
+		Page:    page,
+		Limit:   constants.DefaultPageLimit,
 	}
 	if uid, err := strconv.ParseUint(c.Query("user_id"), 10, 64); err == nil {
 		filter.UserID = uint(uid)

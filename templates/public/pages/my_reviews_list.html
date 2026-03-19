@@ -25,9 +25,15 @@
       {{range .reviews}}
       <tr>
         <td>
+          {{if eq .Status "approved"}}
           <a href="/reviews/{{.ID}}" class="text-decoration-none fw-semibold">
             {{if gt (len .Title) 60}}{{slice .Title 0 60}}...{{else}}{{.Title}}{{end}}
           </a>
+          {{else}}
+          <a href="/my/reviews/{{.ID}}/edit" class="text-decoration-none fw-semibold">
+            {{if gt (len .Title) 60}}{{slice .Title 0 60}}...{{else}}{{.Title}}{{end}}
+          </a>
+          {{end}}
         </td>
         <td>
           {{if eq .Type "place"}}<span class="badge bg-success">Địa điểm</span>

@@ -32,9 +32,9 @@
         {{if $images}}
         <div class="mb-3">
           <div class="row g-2">
-            {{range $images}}
+            {{range $i, $img := $images}}
             <div class="col-6 col-md-4">
-              <img src="{{.}}" class="img-fluid rounded" style="height: 200px; object-fit: cover; width: 100%;" alt="" />
+              <img src="{{$img}}" class="img-fluid rounded" style="height: 200px; object-fit: cover; width: 100%;" alt="{{$.review.Title}} - Ảnh {{add $i 1}}" />
             </div>
             {{end}}
           </div>
@@ -44,16 +44,20 @@
         <div class="review-content" style="white-space: pre-wrap;">{{.review.Content}}</div>
 
         <div class="d-flex align-items-center mt-4 pt-3 border-top">
-          <span class="me-3"><i class="bi bi-heart-fill text-danger me-1"></i>{{.review.LikeCount}} lượt thích</span>
           {{if .user}}
           <form method="POST" action="/reviews/{{.review.ID}}/like" class="d-inline">
             <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
-            {{if .has_liked}}
-            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-heart-fill me-1"></i>Bỏ thích</button>
-            {{else}}
-            <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-heart me-1"></i>Thích</button>
-            {{end}}
+            <button type="submit" class="btn btn-sm btn-link p-0 text-decoration-none">
+              {{if .has_liked}}
+              <i class="bi bi-heart-fill text-danger fs-5"></i>
+              {{else}}
+              <i class="bi bi-heart text-danger fs-5"></i>
+              {{end}}
+              <span class="text-muted ms-1">{{.review.LikeCount}} lượt thích</span>
+            </button>
           </form>
+          {{else}}
+          <span><i class="bi bi-heart-fill text-danger me-1"></i>{{.review.LikeCount}} lượt thích</span>
           {{end}}
         </div>
       </div>

@@ -160,25 +160,48 @@ func (s *ReviewService) DeleteReview(ctx context.Context, id, userID uint) error
 }
 
 func (s *ReviewService) ToggleLike(ctx context.Context, userID, reviewID uint) (liked bool, err error) {
-	exists, err := s.likeRepo.Exists(ctx, userID, reviewID)
+	review, err := s.repo.FindByID(ctx, reviewID)
 	if err != nil {
-		return false, fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
-	}
-
-	if exists {
-		if err := s.likeRepo.Delete(ctx, userID, reviewID); err != nil {
-			return false, fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, appErrors.ErrReviewNotFound
 		}
-		_ = s.repo.IncrementLikeCount(ctx, reviewID, -1)
-		return false, nil
-	}
-
-	like := &models.ReviewLike{UserID: userID, ReviewID: reviewID}
-	if err := s.likeRepo.Create(ctx, like); err != nil {
 		return false, fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
 	}
-	_ = s.repo.IncrementLikeCount(ctx, reviewID, 1)
-	return true, nil
+	if review.Status != constants.ReviewStatusApproved {
+		return false, appErrors.ErrReviewNotFound
+	}
+
+	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		exists, err := s.likeRepo.Exists(ctx, userID, reviewID)
+		if err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+		}
+
+		if exists {
+			if err := s.likeRepo.Delete(ctx, userID, reviewID); err != nil {
+				return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+			}
+			if err := s.repo.IncrementLikeCount(ctx, reviewID, -1); err != nil {
+				return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+			}
+			liked = false
+			return nil
+		}
+
+		like := &models.ReviewLike{UserID: userID, ReviewID: reviewID}
+		if err := s.likeRepo.Create(ctx, like); err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+		}
+		if err := s.repo.IncrementLikeCount(ctx, reviewID, 1); err != nil {
+			return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceToggleLike, err)
+		}
+		liked = true
+		return nil
+	})
+	if txErr != nil {
+		return false, txErr
+	}
+	return liked, nil
 }
 
 func (s *ReviewService) HasUserLiked(ctx context.Context, userID, reviewID uint) bool {
@@ -189,10 +212,40 @@ func (s *ReviewService) HasUserLiked(ctx context.Context, userID, reviewID uint)
 	return exists
 }
 
+func (s *ReviewService) GetLikedMap(ctx context.Context, userID uint, reviews []models.Review) map[uint]bool {
+	result := make(map[uint]bool)
+	if userID == 0 || len(reviews) == 0 {
+		return result
+	}
+	ids := make([]uint, len(reviews))
+	for i, r := range reviews {
+		ids[i] = r.ID
+	}
+	likedIDs, err := s.likeRepo.FindByUserAndReviewIDs(ctx, userID, ids)
+	if err != nil {
+		return result
+	}
+	for _, id := range likedIDs {
+		result[id] = true
+	}
+	return result
+}
+
 func (s *ReviewService) AddComment(ctx context.Context, userID, reviewID uint, parentID *uint, content string) error {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return appErrors.ErrInvalidInput
+	}
+
+	review, err := s.repo.FindByID(ctx, reviewID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return appErrors.ErrReviewNotFound
+		}
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxReviewServiceAddComment, err)
+	}
+	if review.Status != constants.ReviewStatusApproved {
+		return appErrors.ErrReviewNotFound
 	}
 
 	if parentID != nil {
