@@ -15,7 +15,6 @@ import (
 	"sun-booking-tours/internal/repository"
 	"sun-booking-tours/internal/services"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -132,22 +131,22 @@ func (h *ReviewHandler) Create(c *gin.Context) {
 		Images:  parseImageURLs(c.PostForm("images")),
 	}
 
-	review, err := h.service.CreateReview(c.Request.Context(), user.ID, input)
+	_, err := h.service.CreateReview(c.Request.Context(), user.ID, input)
 	if err != nil {
-		slog.Error(messages.LogReviewCreateFailed, "error", err)
+		slog.Error(messages.LogReviewCreateFailed, "user_id", user.ID, "error", err)
 		errMsg := messages.ErrReviewCreateFail
 		var appErr *appErrors.AppError
 		if errors.As(err, &appErr) {
 			errMsg = getReviewValidationMsg(input)
 		}
-		h.setFlashAndRedirect(c, errMsg, constants.RoutePublicReviewCreate)
+		middleware.SetFlashError(c, errMsg)
+		c.Redirect(http.StatusFound, constants.RoutePublicReviewCreate)
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgReviewCreated, "success")
-	_ = session.Save()
-	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyReviews, review.ID)+"/edit")
+	slog.Info("review created", "user_id", user.ID)
+	middleware.SetFlashSuccess(c, messages.MsgReviewCreated)
+	c.Redirect(http.StatusFound, constants.RouteMyReviews)
 }
 
 func (h *ReviewHandler) MyList(c *gin.Context) {
@@ -239,21 +238,21 @@ func (h *ReviewHandler) Update(c *gin.Context) {
 	}
 
 	if err := h.service.UpdateReview(c.Request.Context(), uint(id), user.ID, input); err != nil {
-		slog.Error(messages.LogReviewUpdateFailed, "id", id, "error", err)
+		slog.Error(messages.LogReviewUpdateFailed, "id", id, "user_id", user.ID, "error", err)
 		errMsg := messages.ErrReviewUpdateFail
 		if errors.Is(err, appErrors.ErrReviewNotFound) {
 			errMsg = messages.ErrReviewNotFound
 		} else if errors.Is(err, appErrors.ErrReviewNotOwner) {
 			errMsg = messages.ErrReviewNotOwner
 		}
-		h.setFlashAndRedirect(c, errMsg, fmt.Sprintf("%s/%d/edit", constants.RouteMyReviews, id))
+		middleware.SetFlashError(c, errMsg)
+		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d/edit", constants.RouteMyReviews, id))
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgReviewUpdated, "success")
-	_ = session.Save()
-	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d/edit", constants.RouteMyReviews, id))
+	slog.Info("review updated", "id", id, "user_id", user.ID)
+	middleware.SetFlashSuccess(c, messages.MsgReviewUpdated)
+	c.Redirect(http.StatusFound, constants.RouteMyReviews)
 }
 
 func (h *ReviewHandler) Delete(c *gin.Context) {
@@ -265,20 +264,20 @@ func (h *ReviewHandler) Delete(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteReview(c.Request.Context(), uint(id), user.ID); err != nil {
-		slog.Error(messages.LogReviewDeleteFailed, "id", id, "error", err)
+		slog.Error(messages.LogReviewDeleteFailed, "id", id, "user_id", user.ID, "error", err)
 		errMsg := messages.ErrReviewDeleteFail
 		if errors.Is(err, appErrors.ErrReviewNotFound) {
 			errMsg = messages.ErrReviewNotFound
 		} else if errors.Is(err, appErrors.ErrReviewNotOwner) {
 			errMsg = messages.ErrReviewNotOwner
 		}
-		h.setFlashAndRedirect(c, errMsg, constants.RouteMyReviews)
+		middleware.SetFlashError(c, errMsg)
+		c.Redirect(http.StatusFound, constants.RouteMyReviews)
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgReviewDeleted, "success")
-	_ = session.Save()
+	slog.Info("review deleted", "id", id, "user_id", user.ID)
+	middleware.SetFlashSuccess(c, messages.MsgReviewDeleted)
 	c.Redirect(http.StatusFound, constants.RouteMyReviews)
 }
 
@@ -292,18 +291,17 @@ func (h *ReviewHandler) ToggleLike(c *gin.Context) {
 
 	liked, err := h.service.ToggleLike(c.Request.Context(), user.ID, uint(id))
 	if err != nil {
-		slog.Error(messages.LogReviewLikeFailed, "id", id, "error", err)
-		h.setFlashAndRedirect(c, messages.ErrLikeFail, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, id))
+		slog.Error(messages.LogReviewLikeFailed, "review_id", id, "user_id", user.ID, "error", err)
+		middleware.SetFlashError(c, messages.ErrLikeFail)
+		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, id))
 		return
 	}
 
-	session := sessions.Default(c)
 	if liked {
-		session.AddFlash(messages.MsgReviewLiked, "success")
+		middleware.SetFlashSuccess(c, messages.MsgReviewLiked)
 	} else {
-		session.AddFlash(messages.MsgReviewUnliked, "success")
+		middleware.SetFlashSuccess(c, messages.MsgReviewUnliked)
 	}
-	_ = session.Save()
 	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, id))
 }
 
@@ -322,14 +320,13 @@ func (h *ReviewHandler) AddComment(c *gin.Context) {
 	}
 
 	if err := h.service.AddComment(c.Request.Context(), user.ID, uint(reviewID), nil, content); err != nil {
-		slog.Error(messages.LogReviewCommentFailed, "review_id", reviewID, "error", err)
-		h.setFlashAndRedirect(c, messages.ErrCommentContentReq, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
+		slog.Error(messages.LogReviewCommentFailed, "review_id", reviewID, "user_id", user.ID, "error", err)
+		middleware.SetFlashError(c, messages.ErrCommentFail)
+		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgCommentAdded, "success")
-	_ = session.Save()
+	middleware.SetFlashSuccess(c, messages.MsgCommentAdded)
 	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
 }
 
@@ -356,14 +353,13 @@ func (h *ReviewHandler) ReplyComment(c *gin.Context) {
 
 	parentID := uint(commentID)
 	if err := h.service.AddComment(c.Request.Context(), user.ID, uint(reviewID), &parentID, content); err != nil {
-		slog.Error(messages.LogReviewCommentFailed, "comment_id", commentID, "error", err)
-		h.setFlashAndRedirect(c, messages.ErrCommentContentReq, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
+		slog.Error(messages.LogReviewCommentFailed, "comment_id", commentID, "user_id", user.ID, "error", err)
+		middleware.SetFlashError(c, messages.ErrCommentFail)
+		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgCommentAdded, "success")
-	_ = session.Save()
+	middleware.SetFlashSuccess(c, messages.MsgCommentAdded)
 	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID))
 }
 
@@ -380,7 +376,7 @@ func (h *ReviewHandler) DeleteComment(c *gin.Context) {
 
 	isAdmin := user.Role == constants.RoleAdmin
 	if err := h.service.DeleteComment(c.Request.Context(), uint(commentID), user.ID, isAdmin); err != nil {
-		slog.Error(messages.LogReviewDelCommentFailed, "comment_id", commentID, "error", err)
+		slog.Error(messages.LogReviewDelCommentFailed, "comment_id", commentID, "user_id", user.ID, "error", err)
 		errMsg := messages.ErrCommentDeleteFail
 		if errors.Is(err, appErrors.ErrCommentNotFound) {
 			errMsg = messages.ErrCommentNotFound
@@ -391,17 +387,17 @@ func (h *ReviewHandler) DeleteComment(c *gin.Context) {
 		if reviewID > 0 {
 			redirectURL = fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID)
 		}
-		h.setFlashAndRedirect(c, errMsg, redirectURL)
+		middleware.SetFlashError(c, errMsg)
+		c.Redirect(http.StatusFound, redirectURL)
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgCommentDeleted, "success")
-	_ = session.Save()
+	slog.Info("comment deleted", "comment_id", commentID, "user_id", user.ID)
 	redirectURL := constants.RoutePublicReviews
 	if reviewID > 0 {
 		redirectURL = fmt.Sprintf("%s/%d", constants.RoutePublicReviews, reviewID)
 	}
+	middleware.SetFlashSuccess(c, messages.MsgCommentDeleted)
 	c.Redirect(http.StatusFound, redirectURL)
 }
 
@@ -416,9 +412,7 @@ func (h *ReviewHandler) renderError(c *gin.Context, status int, message string) 
 }
 
 func (h *ReviewHandler) setFlashAndRedirect(c *gin.Context, msg, url string) {
-	session := sessions.Default(c)
-	session.AddFlash(msg, "error")
-	_ = session.Save()
+	middleware.SetFlashError(c, msg)
 	c.Redirect(http.StatusFound, url)
 }
 

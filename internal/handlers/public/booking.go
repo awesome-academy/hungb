@@ -13,7 +13,6 @@ import (
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/services"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,9 +40,7 @@ func (h *BookingHandler) Form(c *gin.Context) {
 	}
 
 	if len(tour.Schedules) == 0 {
-		session := sessions.Default(c)
-		session.AddFlash(messages.ErrBookingNoSchedules, "error")
-		_ = session.Save()
+		middleware.SetFlashError(c, messages.ErrBookingNoSchedules)
 		c.Redirect(http.StatusFound, fmt.Sprintf("/tours/%s", tour.Slug))
 		return
 	}
@@ -83,9 +80,7 @@ func (h *BookingHandler) Create(c *gin.Context) {
 	note := c.PostForm("note")
 
 	if scheduleID == 0 || numParticipants < 1 {
-		session := sessions.Default(c)
-		session.AddFlash(messages.ErrInvalidForm, "error")
-		_ = session.Save()
+		middleware.SetFlashError(c, messages.ErrInvalidForm)
 		c.Redirect(http.StatusFound, fmt.Sprintf("/tours/%s/book?schedule_id=%d", slug, scheduleID))
 		return
 	}
@@ -115,18 +110,14 @@ func (h *BookingHandler) Create(c *gin.Context) {
 			}
 		}
 
-		session := sessions.Default(c)
-		session.AddFlash(errMsg, "error")
-		_ = session.Save()
+		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, fmt.Sprintf("/tours/%s/book?schedule_id=%d", slug, scheduleID))
 		return
 	}
 
 	fullBooking, err := h.bookingService.GetBooking(c.Request.Context(), booking.ID, user.ID)
 	if err != nil {
-		session := sessions.Default(c)
-		session.AddFlash(messages.MsgBookingSuccess, "success")
-		_ = session.Save()
+		middleware.SetFlashSuccess(c, messages.MsgBookingSuccess)
 		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyBookings, booking.ID))
 		return
 	}
@@ -240,16 +231,12 @@ func (h *BookingHandler) Cancel(c *gin.Context) {
 			errMsg = messages.ErrBookingCannotCancel
 		}
 
-		session := sessions.Default(c)
-		session.AddFlash(errMsg, "error")
-		_ = session.Save()
+		middleware.SetFlashError(c, errMsg)
 		c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyBookings, bookingID))
 		return
 	}
 
-	session := sessions.Default(c)
-	session.AddFlash(messages.MsgBookingCancelSuccess, "success")
-	_ = session.Save()
+	middleware.SetFlashSuccess(c, messages.MsgBookingCancelSuccess)
 	c.Redirect(http.StatusFound, fmt.Sprintf("%s/%d", constants.RouteMyBookings, bookingID))
 }
 
