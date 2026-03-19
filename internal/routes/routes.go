@@ -50,6 +50,12 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	bookingService := services.NewBookingService(db, bookingRepo, scheduleRepo)
 	bookingHandler := publicHandlers.NewBookingHandler(bookingService, tourService)
 
+	reviewRepo := repository.NewReviewRepository(db)
+	likeRepo := repository.NewReviewLikeRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	reviewService := services.NewReviewService(db, reviewRepo, likeRepo, commentRepo)
+	reviewHandler := publicHandlers.NewReviewHandler(reviewService)
+
 	public := router.Group("/")
 	public.Use(middleware.LoadCategories(catRepo))
 	{
@@ -61,6 +67,9 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		public.GET("/login", authHandler.LoginForm)
 		public.POST("/login", authHandler.Login)
 		public.POST("/logout", authHandler.Logout)
+
+		public.GET("/reviews", reviewHandler.List)
+		public.GET("/reviews/:id", reviewHandler.Detail)
 	}
 
 	// OAuth routes (exempt from CSRF — provider handles security via state param)
@@ -91,6 +100,17 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		auth.GET("/my/bookings", bookingHandler.MyList)
 		auth.GET("/my/bookings/:id", bookingHandler.Detail)
 		auth.POST("/my/bookings/:id/cancel", bookingHandler.Cancel)
+
+		auth.GET("/reviews/create", reviewHandler.CreateForm)
+		auth.POST("/reviews/create", reviewHandler.Create)
+		auth.POST("/reviews/:id/like", reviewHandler.ToggleLike)
+		auth.POST("/reviews/:id/comments", reviewHandler.AddComment)
+		auth.POST("/comments/:id/reply", reviewHandler.ReplyComment)
+		auth.POST("/comments/:id/delete", reviewHandler.DeleteComment)
+		auth.GET("/my/reviews", reviewHandler.MyList)
+		auth.GET("/my/reviews/:id/edit", reviewHandler.EditForm)
+		auth.POST("/my/reviews/:id/edit", reviewHandler.Update)
+		auth.POST("/my/reviews/:id/delete", reviewHandler.Delete)
 	}
 }
 
@@ -118,6 +138,12 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 	revenueRepo := repository.NewRevenueRepository(db)
 	revenueService := services.NewRevenueService(revenueRepo)
 	revenueHandler := adminHandlers.NewRevenueHandler(revenueService)
+
+	reviewRepo := repository.NewReviewRepository(db)
+	likeRepo := repository.NewReviewLikeRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	adminReviewService := services.NewReviewService(db, reviewRepo, likeRepo, commentRepo)
+	adminReviewHandler := adminHandlers.NewReviewHandler(adminReviewService)
 
 	admin := router.Group("/admin")
 	{
@@ -158,6 +184,10 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.POST("/bookings/:id/complete", adminBookingHandler.Complete)
 
 		adminAuth.GET("/revenue", revenueHandler.Index)
+
+		adminAuth.GET("/reviews", adminReviewHandler.List)
+		adminAuth.POST("/reviews/:id/approve", adminReviewHandler.Approve)
+		adminAuth.POST("/reviews/:id/reject", adminReviewHandler.Reject)
 	}
 }
 

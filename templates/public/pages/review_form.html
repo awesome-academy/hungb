@@ -1,0 +1,65 @@
+{{template "public_base" .}}
+{{define "content"}}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    {{if .is_edit}}
+    <li class="breadcrumb-item"><a href="/my/reviews">Bài đánh giá của tôi</a></li>
+    <li class="breadcrumb-item active">Chỉnh sửa</li>
+    {{else}}
+    <li class="breadcrumb-item"><a href="/reviews">Đánh giá</a></li>
+    <li class="breadcrumb-item active">Viết bài mới</li>
+    {{end}}
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>{{.title}}</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{if .is_edit}}/my/reviews/{{.review.ID}}/edit{{else}}/reviews/create{{end}}">
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+
+          <div class="mb-3">
+            <label for="title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+            <input type="text" id="title" name="title" class="form-control"
+                   value="{{if .is_edit}}{{.review.Title}}{{end}}" required />
+          </div>
+
+          <div class="mb-3">
+            <label for="type" class="form-label">Loại bài viết <span class="text-danger">*</span></label>
+            <select id="type" name="type" class="form-select" required>
+              <option value="">-- Chọn loại --</option>
+              <option value="place" {{if and .is_edit (eq .review.Type "place")}}selected{{end}}>Địa điểm</option>
+              <option value="food" {{if and .is_edit (eq .review.Type "food")}}selected{{end}}>Ẩm thực</option>
+              <option value="news" {{if and .is_edit (eq .review.Type "news")}}selected{{end}}>Tin tức</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="content" class="form-label">Nội dung <span class="text-danger">*</span></label>
+            <textarea id="content" name="content" class="form-control" rows="10" required>{{if .is_edit}}{{.review.Content}}{{end}}</textarea>
+            <div class="form-text">Nội dung phải có ít nhất 10 ký tự.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="images" class="form-label">Ảnh (URL, mỗi dòng 1 URL)</label>
+            <textarea id="images" name="images" class="form-control" rows="3" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg">{{if .is_edit}}{{$imgs := jsonArray .review.Images}}{{range $i, $url := $imgs}}{{if $i}}&#10;{{end}}{{$url}}{{end}}{{end}}</textarea>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              {{if .is_edit}}<i class="bi bi-check-lg me-1"></i>Cập nhật{{else}}<i class="bi bi-send me-1"></i>Gửi bài{{end}}
+            </button>
+            <a href="{{if .is_edit}}/my/reviews{{else}}/reviews{{end}}" class="btn btn-outline-secondary">Hủy</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{end}}

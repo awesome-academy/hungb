@@ -71,6 +71,25 @@ const (
 )
 
 const (
+	RoutePublicReviews      = "/reviews"
+	RoutePublicReviewCreate = "/reviews/create"
+	RouteMyReviews          = "/my/reviews"
+	RouteAdminReviews       = "/admin/reviews"
+)
+
+const (
+	ReviewStatusPending  = "pending"
+	ReviewStatusApproved = "approved"
+	ReviewStatusRejected = "rejected"
+)
+
+const (
+	ReviewTypePlace = "place"
+	ReviewTypeFood  = "food"
+	ReviewTypeNews  = "news"
+)
+
+const (
 	TourStatusDraft    = "draft"
 	TourStatusActive   = "active"
 	TourStatusInactive = "inactive"

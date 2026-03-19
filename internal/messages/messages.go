@@ -318,3 +318,61 @@ const (
 
 	TemplateNotFoundText = "template not found: "
 )
+
+// ── Public — Review
+const (
+	TitlePublicReviews = "Bài đánh giá"
+	TitleReviewCreate  = "Viết bài đánh giá"
+	TitleReviewEdit    = "Chỉnh sửa bài đánh giá"
+	TitleMyReviews     = "Bài đánh giá của tôi"
+
+	MsgReviewCreated  = "Tạo bài đánh giá thành công! Bài viết đang chờ duyệt."
+	MsgReviewUpdated  = "Cập nhật bài đánh giá thành công."
+	MsgReviewDeleted  = "Xóa bài đánh giá thành công."
+	MsgReviewLiked    = "Đã thích bài đánh giá."
+	MsgReviewUnliked  = "Đã bỏ thích bài đánh giá."
+	MsgCommentAdded   = "Thêm bình luận thành công."
+	MsgCommentDeleted = "Xóa bình luận thành công."
+
+	ErrReviewNotFound    = "Không tìm thấy bài đánh giá."
+	ErrReviewNotOwner    = "Bạn không có quyền thao tác bài đánh giá này."
+	ErrReviewCreateFail  = "Không thể tạo bài đánh giá. Vui lòng thử lại."
+	ErrReviewUpdateFail  = "Không thể cập nhật bài đánh giá. Vui lòng thử lại."
+	ErrReviewDeleteFail  = "Không thể xóa bài đánh giá. Vui lòng thử lại."
+	ErrReviewTitleReq    = "Tiêu đề bài đánh giá là bắt buộc."
+	ErrReviewContentReq  = "Nội dung bài đánh giá là bắt buộc."
+	ErrReviewContentMin  = "Nội dung phải có ít nhất 10 ký tự."
+	ErrReviewInvalidType = "Loại bài đánh giá không hợp lệ."
+	ErrLikeFail          = "Không thể thực hiện thao tác thích. Vui lòng thử lại."
+	ErrCommentContentReq = "Nội dung bình luận là bắt buộc."
+	ErrCommentNotFound   = "Không tìm thấy bình luận."
+	ErrCommentNotOwner   = "Bạn không có quyền xóa bình luận này."
+	ErrCommentDeleteFail = "Không thể xóa bình luận. Vui lòng thử lại."
+	ErrCommentFail       = "Không thể thêm bình luận. Vui lòng thử lại."
+
+	LogReviewListFailed       = "public: list reviews failed"
+	LogReviewDetailFailed     = "public: get review detail failed"
+	LogReviewCreateFailed     = "public: create review failed"
+	LogReviewUpdateFailed     = "public: update review failed"
+	LogReviewDeleteFailed     = "public: delete review failed"
+	LogReviewMyListFailed     = "public: list my reviews failed"
+	LogReviewLikeFailed       = "public: toggle review like failed"
+	LogReviewCommentFailed    = "public: add comment failed"
+	LogReviewDelCommentFailed = "public: delete comment failed"
+)
+
+// ── Admin — Review
+const (
+	TitleAdminReviews = "Quản lý đánh giá"
+
+	MsgAdminReviewApproved = "Duyệt bài đánh giá thành công."
+	MsgAdminReviewRejected = "Từ chối bài đánh giá thành công."
+
+	ErrAdminReviewNotFound    = "Không tìm thấy bài đánh giá."
+	ErrAdminReviewApproveFail = "Không thể duyệt bài đánh giá."
+	ErrAdminReviewRejectFail  = "Không thể từ chối bài đánh giá."
+
+	LogAdminReviewListFailed    = "admin: list reviews failed"
+	LogAdminReviewApproveFailed = "admin: approve review failed"
+	LogAdminReviewRejectFailed  = "admin: reject review failed"
+)

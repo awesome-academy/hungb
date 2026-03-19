@@ -1,0 +1,95 @@
+{{template "public_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3><i class="bi bi-journal-text me-2"></i>Bài đánh giá của tôi</h3>
+  <a href="/reviews/create" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Viết bài mới
+  </a>
+</div>
+
+{{if .reviews}}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Tiêu đề</th>
+        <th>Loại</th>
+        <th>Trạng thái</th>
+        <th>Lượt thích</th>
+        <th>Ngày tạo</th>
+        <th class="text-end">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .reviews}}
+      <tr>
+        <td>
+          {{if eq .Status "approved"}}
+          <a href="/reviews/{{.ID}}" class="text-decoration-none fw-semibold">
+            {{if gt (len .Title) 60}}{{slice .Title 0 60}}...{{else}}{{.Title}}{{end}}
+          </a>
+          {{else}}
+          <a href="/my/reviews/{{.ID}}/edit" class="text-decoration-none fw-semibold">
+            {{if gt (len .Title) 60}}{{slice .Title 0 60}}...{{else}}{{.Title}}{{end}}
+          </a>
+          {{end}}
+        </td>
+        <td>
+          {{if eq .Type "place"}}<span class="badge bg-success">Địa điểm</span>
+          {{else if eq .Type "food"}}<span class="badge bg-warning text-dark">Ẩm thực</span>
+          {{else}}<span class="badge bg-info text-dark">Tin tức</span>{{end}}
+        </td>
+        <td>
+          {{if eq .Status "pending"}}<span class="badge bg-secondary">Chờ duyệt</span>
+          {{else if eq .Status "approved"}}<span class="badge bg-success">Đã duyệt</span>
+          {{else}}<span class="badge bg-danger">Bị từ chối</span>{{end}}
+        </td>
+        <td><i class="bi bi-heart-fill text-danger me-1"></i>{{.LikeCount}}</td>
+        <td>{{formatDate .CreatedAt}}</td>
+        <td class="text-end">
+          <a href="/my/reviews/{{.ID}}/edit" class="btn btn-sm btn-outline-primary me-1" title="Chỉnh sửa">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <form method="POST" action="/my/reviews/{{.ID}}/delete" class="d-inline"
+                onsubmit="return confirm('Bạn có chắc muốn xóa bài này?')">
+            <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{$p := .pagination}}
+{{if gt $p.TotalPages 1}}
+<nav aria-label="Phân trang">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{if le $p.Page 1}}disabled{{end}}">
+      <a class="page-link" href="/my/reviews?page={{$p.PrevPage}}">«</a>
+    </li>
+    {{range $p.Pages}}
+    <li class="page-item {{if eq . $p.Page}}active{{end}}">
+      <a class="page-link" href="/my/reviews?page={{.}}">{{.}}</a>
+    </li>
+    {{end}}
+    <li class="page-item {{if ge $p.Page $p.TotalPages}}disabled{{end}}">
+      <a class="page-link" href="/my/reviews?page={{$p.NextPage}}">»</a>
+    </li>
+  </ul>
+</nav>
+{{end}}
+
+{{else}}
+<div class="text-center py-5">
+  <i class="bi bi-journal-x display-1 text-muted"></i>
+  <p class="mt-3 text-muted">Bạn chưa viết bài đánh giá nào.</p>
+  <a href="/reviews/create" class="btn btn-primary">Viết bài đầu tiên</a>
+</div>
+{{end}}
+
+{{end}}
