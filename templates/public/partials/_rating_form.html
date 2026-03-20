@@ -1,0 +1,55 @@
+{{if .user}}
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0"><i class="bi bi-star me-2"></i>{{if .user_rating}}Cập nhật đánh giá{{else}}Đánh giá tour này{{end}}</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="/tours/{{.tour.Slug}}/rate">
+      <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+      <div class="mb-3">
+        <label class="form-label">Điểm đánh giá</label>
+        <div class="rating-select d-flex gap-1" id="ratingStars">
+          {{$currentScore := 0}}
+          {{if .user_rating}}{{$currentScore = .user_rating.Score}}{{end}}
+          {{range $i := seq 5}}
+          <label class="fs-4" style="cursor:pointer;">
+            <input type="radio" name="score" value="{{$i}}" class="d-none" {{if eq $i $currentScore}}checked{{end}} />
+            <i class="bi {{if and (gt $currentScore 0) (le $i $currentScore)}}bi-star-fill text-warning{{else}}bi-star text-muted{{end}}"></i>
+          </label>
+          {{end}}
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="ratingComment" class="form-label">Nhận xét (không bắt buộc)</label>
+        <textarea name="comment" id="ratingComment" class="form-control" rows="3" placeholder="Chia sẻ trải nghiệm của bạn...">{{if .user_rating}}{{.user_rating.Comment}}{{end}}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-send me-1"></i>{{if .user_rating}}Cập nhật{{else}}Gửi đánh giá{{end}}
+      </button>
+    </form>
+  </div>
+</div>
+<script>
+document.querySelectorAll('#ratingStars label').forEach(function(label) {
+  label.addEventListener('click', function() {
+    var radio = label.querySelector('input[type="radio"]');
+    var val = parseInt(radio.value);
+    document.querySelectorAll('#ratingStars label').forEach(function(l, idx) {
+      var icon = l.querySelector('i');
+      if (idx < val) {
+        icon.className = 'bi bi-star-fill text-warning';
+      } else {
+        icon.className = 'bi bi-star text-muted';
+      }
+    });
+  });
+});
+</script>
+{{else}}
+<div class="card shadow-sm mb-4">
+  <div class="card-body text-center">
+    <p class="text-muted mb-2">Đăng nhập để đánh giá tour này</p>
+    <a href="/login" class="btn btn-outline-primary btn-sm"><i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập</a>
+  </div>
+</div>
+{{end}}

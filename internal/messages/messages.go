@@ -56,6 +56,9 @@ const (
 
 const (
 	TitleHome = "Trang chủ"
+
+	LogHomeFeaturedFailed = "public: load featured tours failed"
+	LogHomeLatestFailed   = "public: load latest tours failed"
 )
 
 // ── Admin Auth
@@ -209,6 +212,20 @@ const (
 
 	LogAdminRevenueLoadFailed      = "admin: load revenue failed"
 	LogAdminRevenueDateParseFailed = "admin: revenue date parse failed"
+)
+
+// ── Public — Rating
+const (
+	MsgRatingSuccess = "Cảm ơn bạn đã đánh giá!"
+	MsgRatingUpdated = "Đánh giá của bạn đã được cập nhật."
+
+	ErrRatingScoreReq     = "Vui lòng chọn số sao (1-5)."
+	ErrRatingInvalid      = "Điểm đánh giá phải từ 1 đến 5."
+	ErrRatingTourNotFound = "Không tìm thấy tour."
+	ErrRatingFail         = "Không thể gửi đánh giá. Vui lòng thử lại."
+
+	LogRatingFailed     = "public: submit rating failed"
+	LogRatingListFailed = "public: list ratings failed"
 )
 
 // ── Public — Booking

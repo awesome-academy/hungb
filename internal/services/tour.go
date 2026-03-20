@@ -249,3 +249,19 @@ func filterNonEmpty(ss []string) []string {
 	}
 	return result
 }
+
+func (s *TourService) GetFeaturedTours(ctx context.Context, limit int) ([]models.Tour, error) {
+	tours, err := s.repo.FindFeatured(ctx, limit)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxTourServiceFeatured, err)
+	}
+	return tours, nil
+}
+
+func (s *TourService) GetLatestTours(ctx context.Context, limit int) ([]models.Tour, error) {
+	tours, err := s.repo.FindLatest(ctx, limit)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxTourServiceLatest, err)
+	}
+	return tours, nil
+}
