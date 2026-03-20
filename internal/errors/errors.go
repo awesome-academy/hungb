@@ -60,6 +60,8 @@ const (
 	ErrCtxTourDelete             = "delete tour"
 	ErrCtxTourHasActiveBookings  = "check tour has active bookings"
 	ErrCtxTourReplaceCategories  = "replace tour categories"
+	ErrCtxTourFindFeatured       = "find featured tours"
+	ErrCtxTourFindLatest         = "find latest tours"
 )
 
 const (
@@ -74,6 +76,8 @@ const (
 	ErrCtxTourServiceDeleteCheckBooks   = "delete tour check bookings"
 	ErrCtxTourServiceDelete             = "delete tour"
 	ErrCtxTourServiceValidateCategories = "validate category ids"
+	ErrCtxTourServiceFeatured           = "get featured tours"
+	ErrCtxTourServiceLatest             = "get latest tours"
 )
 
 const (

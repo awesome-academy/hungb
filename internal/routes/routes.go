@@ -7,7 +7,6 @@ import (
 	"sun-booking-tours/internal/constants"
 	adminHandlers "sun-booking-tours/internal/handlers/admin"
 	publicHandlers "sun-booking-tours/internal/handlers/public"
-	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/middleware"
 	"sun-booking-tours/internal/repository"
 	"sun-booking-tours/internal/services"
@@ -47,6 +46,7 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	ratingService := services.NewRatingService(ratingRepo, tourRepo)
 	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService, ratingService)
 	ratingHandler := publicHandlers.NewRatingHandler(ratingService, tourService)
+	homeHandler := publicHandlers.NewHomeHandler(tourService)
 
 	scheduleRepo := repository.NewScheduleRepository(db)
 	bookingRepo := repository.NewBookingRepository(db)
@@ -62,7 +62,7 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 	public := router.Group("/")
 	public.Use(middleware.LoadCategories(catRepo))
 	{
-		public.GET("/", homePage)
+		public.GET("/", homeHandler.Index)
 		public.GET("/tours", publicTourHandler.List)
 		public.GET("/tours/:slug", publicTourHandler.Detail)
 		public.GET("/register", authHandler.RegisterForm)
@@ -197,18 +197,6 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
-}
-
-func homePage(c *gin.Context) {
-	flashSuccess, flashError := middleware.GetFlash(c)
-	c.HTML(http.StatusOK, "public/pages/home.html", gin.H{
-		"title":          messages.TitleHome,
-		"user":           middleware.GetCurrentUser(c),
-		"csrf_token":     middleware.CSRFToken(c),
-		"flash_success":  flashSuccess,
-		"flash_error":    flashError,
-		"nav_categories": middleware.GetNavCategories(c),
-	})
 }
 
 func redirectToDashboard(c *gin.Context) {

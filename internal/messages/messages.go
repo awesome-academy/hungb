@@ -56,6 +56,9 @@ const (
 
 const (
 	TitleHome = "Trang chủ"
+
+	LogHomeFeaturedFailed = "public: load featured tours failed"
+	LogHomeLatestFailed   = "public: load latest tours failed"
 )
 
 // ── Admin Auth

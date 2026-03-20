@@ -252,6 +252,29 @@ func loadTemplates(baseDir string) render.HTMLRender {
 				}
 				return false
 			},
+			"thumbnail": func(data any) string {
+				var raw []byte
+				switch v := data.(type) {
+				case json.RawMessage:
+					raw = v
+				case []byte:
+					raw = v
+				default:
+					s := fmt.Sprintf("%s", v)
+					if s == "" || s == "<nil>" || strings.HasPrefix(s, "%!") {
+						return "/static/images/placeholder.svg"
+					}
+					raw = []byte(s)
+				}
+				if len(raw) == 0 || string(raw) == "null" {
+					return "/static/images/placeholder.svg"
+				}
+				var urls []string
+				if err := json.Unmarshal(raw, &urls); err != nil || len(urls) == 0 {
+					return "/static/images/placeholder.svg"
+				}
+				return urls[0]
+			},
 		})
 
 		for _, sf := range sharedFiles {
