@@ -43,7 +43,10 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 
 	categoryService := services.NewCategoryService(catRepo)
 	tourService := services.NewTourService(tourRepo, catRepo)
-	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService)
+	ratingRepo := repository.NewRatingRepository(db)
+	ratingService := services.NewRatingService(ratingRepo, tourRepo)
+	publicTourHandler := publicHandlers.NewPublicTourHandler(tourService, categoryService, ratingService)
+	ratingHandler := publicHandlers.NewRatingHandler(ratingService, tourService)
 
 	scheduleRepo := repository.NewScheduleRepository(db)
 	bookingRepo := repository.NewBookingRepository(db)
@@ -97,6 +100,7 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 
 		auth.GET("/tours/:slug/book", bookingHandler.Form)
 		auth.POST("/tours/:slug/book", bookingHandler.Create)
+		auth.POST("/tours/:slug/rate", ratingHandler.Rate)
 		auth.GET("/my/bookings", bookingHandler.MyList)
 		auth.GET("/my/bookings/:id", bookingHandler.Detail)
 		auth.POST("/my/bookings/:id/cancel", bookingHandler.Cancel)

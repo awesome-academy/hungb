@@ -241,7 +241,6 @@ const (
 	ErrCtxRevenueServiceGet       = "revenue service get"
 )
 
-// Review & Rating
 var (
 	ErrReviewNotFound      = NewAppError(http.StatusNotFound, "review not found")
 	ErrReviewNotOwner      = NewAppError(http.StatusForbidden, "not review owner")
@@ -249,6 +248,12 @@ var (
 	ErrReviewCannotReject  = NewAppError(http.StatusBadRequest, "review cannot be rejected")
 	ErrCommentNotFound     = NewAppError(http.StatusNotFound, "comment not found")
 	ErrCommentNotOwner     = NewAppError(http.StatusForbidden, "not comment owner")
+)
+
+var (
+	ErrRatingNotFound = NewAppError(http.StatusNotFound, "rating not found")
+	ErrAlreadyRated   = NewAppError(http.StatusConflict, "already rated this tour")
+	ErrInvalidScore   = NewAppError(http.StatusBadRequest, "score must be between 1 and 5")
 )
 
 const (
@@ -276,6 +281,17 @@ const (
 const (
 	ErrCtxLikeToggle = "toggle review like"
 	ErrCtxLikeCheck  = "check review like"
+)
+
+const (
+	ErrCtxRatingFindByUserTour = "find rating by user and tour"
+	ErrCtxRatingUpsert         = "upsert rating"
+	ErrCtxRatingFindByTour     = "find ratings by tour"
+	ErrCtxRatingCountByTour    = "count ratings by tour"
+	ErrCtxRatingCalcAvg        = "calculate average rating"
+	ErrCtxRatingServiceRate    = "rating service rate"
+	ErrCtxRatingServiceList    = "rating service list"
+	ErrCtxRatingUpdateTourAvg  = "update tour avg rating"
 )
 
 const (

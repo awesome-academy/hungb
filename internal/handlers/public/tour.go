@@ -20,12 +20,13 @@ import (
 )
 
 type PublicTourHandler struct {
-	service    *services.TourService
-	catService *services.CategoryService
+	service       *services.TourService
+	catService    *services.CategoryService
+	ratingService *services.RatingService
 }
 
-func NewPublicTourHandler(service *services.TourService, catService *services.CategoryService) *PublicTourHandler {
-	return &PublicTourHandler{service: service, catService: catService}
+func NewPublicTourHandler(service *services.TourService, catService *services.CategoryService, ratingService *services.RatingService) *PublicTourHandler {
+	return &PublicTourHandler{service: service, catService: catService, ratingService: ratingService}
 }
 
 func (h *PublicTourHandler) List(c *gin.Context) {
@@ -149,14 +150,29 @@ func (h *PublicTourHandler) Detail(c *gin.Context) {
 		_ = json.Unmarshal(tour.Images, &imageURLs)
 	}
 
+	user := middleware.GetCurrentUser(c)
+	var userID uint
+	if user != nil {
+		userID = user.ID
+	}
+
+	userRating, _ := h.ratingService.GetUserRating(c.Request.Context(), userID, tour.ID)
+	ratings, _, _ := h.ratingService.ListByTour(c.Request.Context(), tour.ID, 1, 20)
+
+	flashSuccess, flashError := middleware.GetFlash(c)
+
 	c.HTML(http.StatusOK, "public/pages/tour_detail.html", gin.H{
 		"title":          tour.Title,
-		"user":           middleware.GetCurrentUser(c),
+		"user":           user,
 		"csrf_token":     middleware.CSRFToken(c),
 		"nav_categories": middleware.GetNavCategories(c),
+		"flash_success":  flashSuccess,
+		"flash_error":    flashError,
 		"tour":           tour,
 		"rating_count":   ratingCount,
 		"image_urls":     imageURLs,
+		"user_rating":    userRating,
+		"ratings":        ratings,
 	})
 }
 

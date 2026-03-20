@@ -65,9 +65,13 @@ const (
 	RouteAdminBookings = "/admin/bookings"
 )
 
-// Defined for template usage only - not used in code
 const (
 	RouteAdminRevenue = "/admin/revenue"
+)
+
+const (
+	RatingMinScore = 1
+	RatingMaxScore = 5
 )
 
 const (

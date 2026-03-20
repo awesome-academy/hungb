@@ -68,79 +68,8 @@
         <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h5>
       </div>
       <div class="card-body">
-        {{if .user}}
-        <form method="POST" action="/reviews/{{.review.ID}}/comments" class="mb-4">
-          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
-          <div class="mb-2">
-            <textarea name="content" class="form-control" rows="3" placeholder="Viết bình luận..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send me-1"></i>Gửi</button>
-        </form>
-        {{else}}
-        <p class="text-muted"><a href="/login">Đăng nhập</a> để bình luận.</p>
-        {{end}}
-
-        {{if .comments}}
-        {{range .comments}}
-        <div class="border rounded p-3 mb-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <strong>{{if .User}}{{.User.FullName}}{{else}}Ẩn danh{{end}}</strong>
-              <small class="text-muted ms-2">{{formatDate .CreatedAt}}</small>
-            </div>
-            {{if $.user}}
-            {{if eq $.user.ID .UserID}}
-            <form method="POST" action="/comments/{{.ID}}/delete" class="d-inline">
-              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
-              <input type="hidden" name="review_id" value="{{$.review.ID}}" />
-              <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Xóa bình luận này?')"><i class="bi bi-trash"></i></button>
-            </form>
-            {{end}}
-            {{end}}
-          </div>
-          <p class="mb-2 mt-1">{{.Content}}</p>
-
-          {{if .Children}}
-          {{range .Children}}
-          <div class="ms-4 border-start ps-3 mt-2">
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <strong>{{if .User}}{{.User.FullName}}{{else}}Ẩn danh{{end}}</strong>
-                <small class="text-muted ms-2">{{formatDate .CreatedAt}}</small>
-              </div>
-              {{if $.user}}
-              {{if eq $.user.ID .UserID}}
-              <form method="POST" action="/comments/{{.ID}}/delete" class="d-inline">
-                <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
-                <input type="hidden" name="review_id" value="{{$.review.ID}}" />
-                <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Xóa bình luận này?')"><i class="bi bi-trash"></i></button>
-              </form>
-              {{end}}
-              {{end}}
-            </div>
-            <p class="mb-0 mt-1">{{.Content}}</p>
-          </div>
-          {{end}}
-          {{end}}
-
-          {{if $.user}}
-          <div class="mt-2">
-            <button class="btn btn-sm btn-link p-0 toggle-reply" data-target="reply-{{.ID}}"><i class="bi bi-reply me-1"></i>Trả lời</button>
-            <form method="POST" action="/comments/{{.ID}}/reply" class="mt-2 d-none" id="reply-{{.ID}}">
-              <input type="hidden" name="_csrf" value="{{$.csrf_token}}" />
-              <input type="hidden" name="review_id" value="{{$.review.ID}}" />
-              <div class="input-group input-group-sm">
-                <input type="text" name="content" class="form-control" placeholder="Trả lời..." />
-                <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
-              </div>
-            </form>
-          </div>
-          {{end}}
-        </div>
-        {{end}}
-        {{else}}
-        <p class="text-muted">Chưa có bình luận nào.</p>
-        {{end}}
+        {{template "public/partials/_comment_form.html" .}}
+        {{template "public/partials/_comments.html" .}}
       </div>
     </div>
   </div>
