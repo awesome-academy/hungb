@@ -43,6 +43,9 @@ type TourRepo interface {
 	HasActiveBookings(ctx context.Context, tourID uint) (bool, error)
 	ReplaceCategories(ctx context.Context, tour *models.Tour, categories []models.Category) error
 	CountRatingsByTourID(ctx context.Context, tourID uint) (int64, error)
+	UpdateAvgRating(ctx context.Context, tourID uint, avg float64) error
+	FindFeatured(ctx context.Context, limit int) ([]models.Tour, error)
+	FindLatest(ctx context.Context, limit int) ([]models.Tour, error)
 }
 
 type tourRepository struct {
@@ -264,4 +267,38 @@ func (r *tourRepository) CountRatingsByTourID(ctx context.Context, tourID uint) 
 		return 0, fmt.Errorf("%s: %w", appErrors.ErrCtxPublicTourCountRatings, err)
 	}
 	return count, nil
+}
+
+func (r *tourRepository) UpdateAvgRating(ctx context.Context, tourID uint, avg float64) error {
+	if err := r.db.WithContext(ctx).
+		Model(&models.Tour{}).
+		Where("id = ?", tourID).
+		Update("avg_rating", avg).Error; err != nil {
+		return fmt.Errorf("%s: %w", appErrors.ErrCtxRatingUpdateTourAvg, err)
+	}
+	return nil
+}
+
+func (r *tourRepository) FindFeatured(ctx context.Context, limit int) ([]models.Tour, error) {
+	var tours []models.Tour
+	if err := r.db.WithContext(ctx).
+		Where("status = ?", constants.TourStatusActive).
+		Order("avg_rating DESC, created_at DESC").
+		Limit(limit).
+		Find(&tours).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindFeatured, err)
+	}
+	return tours, nil
+}
+
+func (r *tourRepository) FindLatest(ctx context.Context, limit int) ([]models.Tour, error) {
+	var tours []models.Tour
+	if err := r.db.WithContext(ctx).
+		Where("status = ?", constants.TourStatusActive).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&tours).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", appErrors.ErrCtxTourFindLatest, err)
+	}
+	return tours, nil
 }

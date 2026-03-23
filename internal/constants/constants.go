@@ -71,6 +71,11 @@ const (
 )
 
 const (
+	RatingMinScore = 1
+	RatingMaxScore = 5
+)
+
+const (
 	RoutePublicReviews      = "/reviews"
 	RoutePublicReviewCreate = "/reviews/create"
 	RouteMyReviews          = "/my/reviews"
@@ -116,3 +121,8 @@ const (
 )
 
 const DefaultPageLimit = 10
+
+const (
+	HomeFeaturedLimit = 6
+	HomeLatestLimit   = 8
+)
