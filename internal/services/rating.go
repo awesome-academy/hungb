@@ -10,7 +10,6 @@ import (
 
 	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
-	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/models"
 	"sun-booking-tours/internal/repository"
 
@@ -44,6 +43,9 @@ func (s *RatingService) RateOrUpdate(ctx context.Context, userID, tourID uint, i
 	}
 
 	_, findErr := s.ratingRepo.FindByUserAndTour(ctx, userID, tourID)
+	if findErr != nil && !errors.Is(findErr, gorm.ErrRecordNotFound) {
+		return false, fmt.Errorf("%s: %w", appErrors.ErrCtxRatingServiceRate, findErr)
+	}
 	isNew = errors.Is(findErr, gorm.ErrRecordNotFound)
 
 	rating := &models.Rating{
@@ -59,11 +61,11 @@ func (s *RatingService) RateOrUpdate(ctx context.Context, userID, tourID uint, i
 
 	avg, err := s.ratingRepo.CalcAvgByTourID(ctx, tourID)
 	if err != nil {
-		return !isNew, fmt.Errorf("%s: %w", appErrors.ErrCtxRatingServiceRate, err)
+		return isNew, fmt.Errorf("%s: %w", appErrors.ErrCtxRatingServiceRate, err)
 	}
 	avg = math.Round(avg*100) / 100
 	if err := s.tourRepo.UpdateAvgRating(ctx, tourID, avg); err != nil {
-		slog.Error(messages.LogRatingFailed, "context", appErrors.ErrCtxRatingUpdateTourAvg, "tour_id", tourID, "error", err)
+		slog.Error(appErrors.ErrCtxRatingUpdateTourAvg, "context", appErrors.ErrCtxRatingUpdateTourAvg, "tour_id", tourID, "error", err)
 	}
 
 	return isNew, nil

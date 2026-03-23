@@ -156,8 +156,15 @@ func (h *PublicTourHandler) Detail(c *gin.Context) {
 		userID = user.ID
 	}
 
-	userRating, _ := h.ratingService.GetUserRating(c.Request.Context(), userID, tour.ID)
-	ratings, _, _ := h.ratingService.ListByTour(c.Request.Context(), tour.ID, 1, 20)
+	userRating, err := h.ratingService.GetUserRating(c.Request.Context(), userID, tour.ID)
+	if err != nil {
+		slog.Error("failed to get user rating", "err", err, "tour_id", tour.ID, "user_id", userID)
+	}
+
+	ratings, _, err := h.ratingService.ListByTour(c.Request.Context(), tour.ID, 1, 20)
+	if err != nil {
+		slog.Error("failed to list ratings by tour", "err", err, "tour_id", tour.ID)
+	}
 
 	flashSuccess, flashError := middleware.GetFlash(c)
 

@@ -32,7 +32,12 @@ func (h *RatingHandler) Rate(c *gin.Context) {
 
 	tour, _, err := h.tourService.GetPublicTourBySlug(c.Request.Context(), slug)
 	if err != nil {
-		middleware.SetFlashError(c, messages.ErrRatingTourNotFound)
+		if errors.Is(err, appErrors.ErrTourNotFound) {
+			middleware.SetFlashError(c, messages.ErrRatingTourNotFound)
+		} else {
+			slog.Error("failed to get public tour by slug", "slug", slug, "error", err)
+			middleware.SetFlashError(c, messages.ErrRatingFail)
+		}
 		c.Redirect(http.StatusFound, constants.RoutePublicTours)
 		return
 	}
