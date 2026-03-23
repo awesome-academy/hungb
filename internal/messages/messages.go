@@ -378,6 +378,23 @@ const (
 	LogReviewDelCommentFailed = "public: delete comment failed"
 )
 
+// ── Admin — User Management
+const (
+	TitleAdminUsers      = "Quản lý người dùng"
+	TitleAdminUserDetail = "Chi tiết người dùng"
+
+	MsgAdminUserStatusUpdated = "Cập nhật trạng thái người dùng thành công."
+
+	ErrAdminUserNotFound       = "Không tìm thấy người dùng."
+	ErrAdminUserUpdateFail     = "Không thể cập nhật trạng thái người dùng."
+	ErrAdminUserCannotBanSelf  = "Không thể thay đổi trạng thái của chính mình."
+	ErrAdminUserCannotBanAdmin = "Không thể thay đổi trạng thái của quản trị viên khác."
+
+	LogAdminUserListFailed   = "admin: list users failed"
+	LogAdminUserDetailFailed = "admin: get user detail failed"
+	LogAdminUserStatusFailed = "admin: update user status failed"
+)
+
 // ── Admin — Review
 const (
 	TitleAdminReviews = "Quản lý đánh giá"

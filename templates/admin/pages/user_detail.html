@@ -1,0 +1,242 @@
+{{template "admin_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-person-circle me-2"></i>Chi tiết người dùng</h2>
+  <a href="/admin/users" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Danh sách
+  </a>
+</div>
+
+<div class="row g-4">
+
+  {{/* Profile card */}}
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body text-center">
+        {{if .target.AvatarURL}}
+        <img src="{{.target.AvatarURL}}" alt="Avatar" class="rounded-circle mb-3" width="96" height="96"
+             style="object-fit:cover;" />
+        {{else}}
+        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
+             style="width:96px;height:96px;">
+          <i class="bi bi-person-fill text-white fs-1"></i>
+        </div>
+        {{end}}
+        <h5 class="fw-bold mb-1">{{.target.FullName}}</h5>
+        <p class="text-muted mb-2">{{.target.Email}}</p>
+        {{if .target.Phone}}<p class="small text-muted mb-2">{{.target.Phone}}</p>{{end}}
+        <div class="mb-3">
+          {{if eq .target.Role "admin"}}
+          <span class="badge bg-dark">Quản trị viên</span>
+          {{else}}
+          <span class="badge bg-secondary">Người dùng</span>
+          {{end}}
+          &nbsp;
+          {{if eq .target.Status "active"}}<span class="badge bg-success">Hoạt động</span>
+          {{else if eq .target.Status "inactive"}}<span class="badge bg-warning text-dark">Chưa kích hoạt</span>
+          {{else}}<span class="badge bg-danger">Bị khóa</span>{{end}}
+        </div>
+        <p class="small text-muted">Ngày tạo: {{formatDate .target.CreatedAt}}</p>
+      </div>
+
+      {{/* Status change form — only for non-admin targets and not self */}}
+      {{if and (ne .target.Role "admin") (ne .target.ID .user.ID)}}
+      <div class="card-footer">
+        <p class="small fw-semibold mb-2">Thay đổi trạng thái</p>
+        <form method="POST" action="/admin/users/{{.target.ID}}/status">
+          <input type="hidden" name="_csrf" value="{{.csrf_token}}" />
+          <div class="d-flex gap-2">
+            <select name="status" class="form-select form-select-sm">
+              <option value="active" {{if eq .target.Status "active"}}selected{{end}}>Hoạt động</option>
+              <option value="inactive" {{if eq .target.Status "inactive"}}selected{{end}}>Chưa kích hoạt</option>
+              <option value="banned" {{if eq .target.Status "banned"}}selected{{end}}>Khóa tài khoản</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+          </div>
+        </form>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  {{/* Right column */}}
+  <div class="col-lg-8">
+
+    {{/* Bookings */}}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-journal-bookmark me-1"></i>Lịch sử đặt tour
+        <span class="badge bg-secondary ms-1">{{len .target.Bookings}}</span>
+      </div>
+      <div class="card-body p-0">
+        {{if .target.Bookings}}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Mã</th>
+                <th>Tour</th>
+                <th>Số người</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày đặt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .target.Bookings}}
+              <tr>
+                <td>#{{.ID}}</td>
+                <td>{{if .Tour}}{{.Tour.Title}}{{else}}—{{end}}</td>
+                <td>{{.NumParticipants}}</td>
+                <td>{{formatPrice .TotalPrice}}</td>
+                <td>
+                  {{if eq .Status "pending"}}<span class="badge bg-warning text-dark">Chờ</span>
+                  {{else if eq .Status "confirmed"}}<span class="badge bg-success">Xác nhận</span>
+                  {{else if eq .Status "cancelled"}}<span class="badge bg-danger">Hủy</span>
+                  {{else}}<span class="badge bg-info">Hoàn thành</span>{{end}}
+                </td>
+                <td>{{formatDate .CreatedAt}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-muted p-3 mb-0">Chưa có đặt tour nào.</p>
+        {{end}}
+      </div>
+    </div>
+
+    {{/* Bank Accounts */}}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-bank me-1"></i>Tài khoản ngân hàng
+        <span class="badge bg-secondary ms-1">{{len .target.BankAccounts}}</span>
+      </div>
+      <div class="card-body p-0">
+        {{if .target.BankAccounts}}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Ngân hàng</th>
+                <th>Số TK</th>
+                <th>Chủ TK</th>
+                <th>Mặc định</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .target.BankAccounts}}
+              <tr>
+                <td>{{.BankName}}</td>
+                <td>{{.AccountNumber}}</td>
+                <td>{{.AccountHolder}}</td>
+                <td>
+                  {{if .IsDefault}}<span class="badge bg-success">Mặc định</span>{{else}}—{{end}}
+                </td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-muted p-3 mb-0">Chưa có tài khoản ngân hàng.</p>
+        {{end}}
+      </div>
+    </div>
+
+    {{/* Reviews */}}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-journal-richtext me-1"></i>Bài đánh giá
+        <span class="badge bg-secondary ms-1">{{len .target.Reviews}}</span>
+      </div>
+      <div class="card-body p-0">
+        {{if .target.Reviews}}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Loại</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .target.Reviews}}
+              <tr>
+                <td>
+                  <a href="/reviews/{{.ID}}" target="_blank" class="text-decoration-none">
+                    {{if gt (len .Title) 40}}{{slice .Title 0 40}}...{{else}}{{.Title}}{{end}}
+                  </a>
+                </td>
+                <td>
+                  {{if eq .Type "place"}}<span class="badge bg-success">Địa điểm</span>
+                  {{else if eq .Type "food"}}<span class="badge bg-warning text-dark">Ẩm thực</span>
+                  {{else}}<span class="badge bg-info text-dark">Tin tức</span>{{end}}
+                </td>
+                <td>
+                  {{if eq .Status "pending"}}<span class="badge bg-secondary">Chờ duyệt</span>
+                  {{else if eq .Status "approved"}}<span class="badge bg-success">Đã duyệt</span>
+                  {{else}}<span class="badge bg-danger">Từ chối</span>{{end}}
+                </td>
+                <td>{{formatDate .CreatedAt}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-muted p-3 mb-0">Chưa có bài đánh giá nào.</p>
+        {{end}}
+      </div>
+    </div>
+
+    {{/* Ratings */}}
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-star me-1"></i>Đánh giá sao tour
+        <span class="badge bg-secondary ms-1">{{len .target.Ratings}}</span>
+      </div>
+      <div class="card-body p-0">
+        {{if .target.Ratings}}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Tour</th>
+                <th>Điểm</th>
+                <th>Nhận xét</th>
+                <th>Ngày</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .target.Ratings}}
+              <tr>
+                <td>{{if .Tour}}{{.Tour.Title}}{{else}}—{{end}}</td>
+                <td>
+                  <span class="text-warning fw-semibold">★ {{.Score}}</span>
+                </td>
+                <td>
+                  {{if .Comment}}
+                    {{if gt (len .Comment) 60}}{{slice .Comment 0 60}}...{{else}}{{.Comment}}{{end}}
+                  {{else}}—{{end}}
+                </td>
+                <td>{{formatDate .CreatedAt}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-muted p-3 mb-0">Chưa có đánh giá sao nào.</p>
+        {{end}}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{{end}}

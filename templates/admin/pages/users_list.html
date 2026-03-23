@@ -1,0 +1,129 @@
+{{template "admin_base" .}}
+{{define "content"}}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-people me-2"></i>Quản lý người dùng</h2>
+  <span class="text-muted">Tổng: {{.total}} người dùng</span>
+</div>
+
+<form method="GET" action="/admin/users" class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label">Vai trò</label>
+        <select name="role" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          <option value="user" {{if eq .filter.Role "user"}}selected{{end}}>Người dùng</option>
+          <option value="admin" {{if eq .filter.Role "admin"}}selected{{end}}>Quản trị</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Tất cả</option>
+          <option value="active" {{if eq .filter.Status "active"}}selected{{end}}>Hoạt động</option>
+          <option value="inactive" {{if eq .filter.Status "inactive"}}selected{{end}}>Chưa kích hoạt</option>
+          <option value="banned" {{if eq .filter.Status "banned"}}selected{{end}}>Bị khóa</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Tìm kiếm</label>
+        <input type="text" name="keyword" class="form-control form-control-sm"
+               value="{{.filter.Keyword}}" placeholder="Tìm tên, email..." />
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Sắp xếp theo</label>
+        <select name="sort_by" class="form-select form-select-sm">
+          <option value="created_at" {{if eq .filter.SortBy "created_at"}}selected{{end}}>Ngày tạo</option>
+          <option value="email" {{if eq .filter.SortBy "email"}}selected{{end}}>Email</option>
+          <option value="full_name" {{if eq .filter.SortBy "full_name"}}selected{{end}}>Họ tên</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Thứ tự</label>
+        <select name="sort_order" class="form-select form-select-sm">
+          <option value="desc" {{if ne .filter.SortOrder "asc"}}selected{{end}}>Mới nhất</option>
+          <option value="asc" {{if eq .filter.SortOrder "asc"}}selected{{end}}>Cũ nhất</option>
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a href="/admin/users" class="btn btn-sm btn-outline-secondary">Xóa lọc</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+{{if .users}}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Mã</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+        <th>Ngày tạo</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .users}}
+      <tr>
+        <td><strong>#{{.ID}}</strong></td>
+        <td>
+          <a href="/admin/users/{{.ID}}" class="text-decoration-none fw-semibold">{{.FullName}}</a>
+        </td>
+        <td>{{.Email}}</td>
+        <td>
+          {{if eq .Role "admin"}}
+          <span class="badge bg-dark">Quản trị</span>
+          {{else}}
+          <span class="badge bg-secondary">Người dùng</span>
+          {{end}}
+        </td>
+        <td>
+          {{if eq .Status "active"}}<span class="badge bg-success">Hoạt động</span>
+          {{else if eq .Status "inactive"}}<span class="badge bg-warning text-dark">Chưa kích hoạt</span>
+          {{else}}<span class="badge bg-danger">Bị khóa</span>{{end}}
+        </td>
+        <td>{{formatDate .CreatedAt}}</td>
+        <td>
+          <a href="/admin/users/{{.ID}}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-eye"></i>
+          </a>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{if gt .total_pages 1}}
+<nav aria-label="Phân trang">
+  <ul class="pagination justify-content-center">
+    <li class="page-item {{if le .page 1}}disabled{{end}}">
+      <a class="page-link" href="/admin/users?page={{add .page -1}}{{if .filter.Role}}&role={{urlquery .filter.Role}}{{end}}{{if .filter.Status}}&status={{urlquery .filter.Status}}{{end}}{{if .filter.Keyword}}&keyword={{urlquery .filter.Keyword}}{{end}}{{if .filter.SortBy}}&sort_by={{urlquery .filter.SortBy}}{{end}}{{if .filter.SortOrder}}&sort_order={{urlquery .filter.SortOrder}}{{end}}">«</a>
+    </li>
+    {{$currentPage := .page}}
+    {{$filter := .filter}}
+    {{range seq .total_pages}}
+    <li class="page-item {{if eq . $currentPage}}active{{end}}">
+      <a class="page-link" href="/admin/users?page={{.}}{{if $filter.Role}}&role={{urlquery $filter.Role}}{{end}}{{if $filter.Status}}&status={{urlquery $filter.Status}}{{end}}{{if $filter.Keyword}}&keyword={{urlquery $filter.Keyword}}{{end}}{{if $filter.SortBy}}&sort_by={{urlquery $filter.SortBy}}{{end}}{{if $filter.SortOrder}}&sort_order={{urlquery $filter.SortOrder}}{{end}}">{{.}}</a>
+    </li>
+    {{end}}
+    <li class="page-item {{if ge .page .total_pages}}disabled{{end}}">
+      <a class="page-link" href="/admin/users?page={{add .page 1}}{{if .filter.Role}}&role={{urlquery .filter.Role}}{{end}}{{if .filter.Status}}&status={{urlquery .filter.Status}}{{end}}{{if .filter.Keyword}}&keyword={{urlquery .filter.Keyword}}{{end}}{{if .filter.SortBy}}&sort_by={{urlquery .filter.SortBy}}{{end}}{{if .filter.SortOrder}}&sort_order={{urlquery .filter.SortOrder}}{{end}}">»</a>
+    </li>
+  </ul>
+</nav>
+{{end}}
+
+{{else}}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-people d-block fs-1 mb-2"></i>
+  <p>Không có người dùng nào.</p>
+</div>
+{{end}}
+{{end}}
