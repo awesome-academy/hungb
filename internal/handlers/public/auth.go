@@ -34,8 +34,6 @@ func NewAuthHandler(authService *services.AuthService, cfg *config.Config) *Auth
 	}
 }
 
-// RegisterForm renders GET /register.
-// Redirects to "/" if the user is already logged in.
 func (h *AuthHandler) RegisterForm(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
 		c.Redirect(http.StatusFound, constants.RouteHome)
@@ -53,7 +51,6 @@ func (h *AuthHandler) RegisterForm(c *gin.Context) {
 	})
 }
 
-// Register handles POST /register.
 func (h *AuthHandler) Register(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
 		c.Redirect(http.StatusFound, constants.RouteHome)
@@ -78,10 +75,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		case appErrors.Is(err, appErrors.ErrEmailAlreadyTaken):
 			errMsg = messages.ErrEmailTaken
 		case appErrors.Is(err, appErrors.ErrInternalServerError):
-			// Service already logged the root cause; show a safe generic message.
 			errMsg = messages.ErrInternalServer
 		default:
-			// Unknown error — log it and show a safe fallback (no internal details).
 			slog.ErrorContext(c.Request.Context(), messages.LogRegisterUnexpectedError, "error", err)
 			errMsg = messages.ErrInternalServer
 		}
@@ -89,13 +84,19 @@ func (h *AuthHandler) Register(c *gin.Context) {
 			"title":      messages.TitleRegister,
 			"csrf_token": middleware.CSRFToken(c),
 			"errors":     []string{errMsg},
-			// Retain non-sensitive fields so the user doesn't retype everything.
-			"form": form,
+			"form":       form,
 		})
 		return
 	}
 
-	// Auto-login: store the new user's ID in session.
+	if h.authService.EmailVerificationRequired() {
+		c.HTML(http.StatusOK, "public/pages/register_success.html", gin.H{
+			"title": messages.TitleRegisterCheckEmail,
+			"email": form.Email,
+		})
+		return
+	}
+
 	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
 		slog.ErrorContext(c.Request.Context(), messages.LogLoginSetSessionFailed, "error", err)
 		middleware.SetFlashError(c, messages.MsgRegisterAutoLoginFail)
@@ -107,8 +108,38 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
-// LoginForm renders GET /login.
-// Redirects to "/" if the user is already logged in.
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+
+	user, err := h.authService.VerifyEmail(c.Request.Context(), token)
+	if err != nil {
+		var errMsg string
+		var appErr *appErrors.AppError
+		if errors.As(err, &appErr) {
+			errMsg = appErr.Message
+		} else {
+			slog.ErrorContext(c.Request.Context(), messages.LogVerifyEmailFailed, "error", err)
+			errMsg = messages.ErrVerifyFailed
+		}
+		c.HTML(http.StatusBadRequest, "public/pages/verify_result.html", gin.H{
+			"title":   messages.TitleVerifyEmail,
+			"success": false,
+			"error":   errMsg,
+		})
+		return
+	}
+
+	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
+		slog.ErrorContext(c.Request.Context(), messages.LogLoginSetSessionFailed, "error", err)
+		middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgVerifySuccess, user.FullName))
+		c.Redirect(http.StatusFound, constants.RouteLogin)
+		return
+	}
+
+	middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgVerifySuccess, user.FullName))
+	c.Redirect(http.StatusFound, constants.RouteHome)
+}
+
 func (h *AuthHandler) LoginForm(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
 		c.Redirect(http.StatusFound, constants.RouteHome)
@@ -126,7 +157,6 @@ func (h *AuthHandler) LoginForm(c *gin.Context) {
 	})
 }
 
-// Login handles POST /login.
 func (h *AuthHandler) Login(c *gin.Context) {
 	if middleware.GetCurrentUser(c) != nil {
 		c.Redirect(http.StatusFound, constants.RouteHome)
@@ -188,7 +218,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.Redirect(http.StatusFound, constants.RouteHome)
 }
 
-// Logout handles POST /logout.
 func (h *AuthHandler) Logout(c *gin.Context) {
 	if err := middleware.ClearSession(c); err != nil {
 		slog.ErrorContext(c.Request.Context(), messages.LogLogoutClearSessionFailed, "error", err)

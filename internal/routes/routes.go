@@ -22,7 +22,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	userRepo := repository.NewUserRepository(db)
 	socialAcctRepo := repository.NewSocialAccountRepository(db)
-	authService := services.NewAuthService(db, userRepo, socialAcctRepo)
+	emailService := services.NewEmailService(cfg)
+	authService := services.NewAuthService(db, userRepo, socialAcctRepo, emailService, cfg.BaseURL)
 	catRepo := repository.NewCategoryRepository(db)
 	tourRepo := repository.NewTourRepository(db)
 
@@ -70,6 +71,7 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		public.GET("/login", authHandler.LoginForm)
 		public.POST("/login", authHandler.Login)
 		public.POST("/logout", authHandler.Logout)
+		public.GET("/verify-email", authHandler.VerifyEmail)
 
 		public.GET("/reviews", reviewHandler.List)
 		public.GET("/reviews/:id", reviewHandler.Detail)
