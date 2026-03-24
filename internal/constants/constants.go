@@ -65,6 +65,11 @@ const (
 	RouteAdminBookings = "/admin/bookings"
 )
 
+const (
+	RouteAdminUsers      = "/admin/users"
+	RouteAdminUserDetail = "/admin/users/%d"
+)
+
 // Defined for template usage only - not used in code
 const (
 	RouteAdminRevenue = "/admin/revenue"

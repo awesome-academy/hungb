@@ -9,16 +9,27 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserFilter carries optional filtering and pagination parameters for user list queries.
+type UserFilter struct {
+	Role      string
+	Status    string
+	Keyword   string
+	SortBy    string
+	SortOrder string
+	Page      int
+	Limit     int
+}
+
 // UserRepo is the data-access contract for user records.
-// Depending on an interface (rather than the concrete struct) keeps services
-// and handlers decoupled from the GORM implementation and makes unit-testing
-// straightforward via simple fakes or mocks.
 type UserRepo interface {
 	FindByID(ctx context.Context, id uint) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	Create(ctx context.Context, user *models.User) error
 	Update(ctx context.Context, user *models.User) error
+	FindAll(ctx context.Context, filter UserFilter) ([]models.User, int64, error)
+	FindByIDWithRelations(ctx context.Context, id uint) (*models.User, error)
+	UpdateStatus(ctx context.Context, id uint, status string) error
 }
 
 // userRepository is the GORM-backed implementation of UserRepo.
@@ -26,12 +37,10 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-// NewUserRepository returns a UserRepo backed by the given *gorm.DB.
 func NewUserRepository(db *gorm.DB) UserRepo {
 	return &userRepository{db: db}
 }
 
-// FindByID returns a user by primary key. Returns gorm.ErrRecordNotFound when missing.
 func (r *userRepository) FindByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
@@ -40,9 +49,6 @@ func (r *userRepository) FindByID(ctx context.Context, id uint) (*models.User, e
 	return &user, nil
 }
 
-// FindByEmail looks up a user by their exact (already-normalised) email.
-// Emails are stored lower-cased on write, so a plain equality check hits the index.
-// Returns gorm.ErrRecordNotFound when missing.
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).
@@ -53,8 +59,6 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*models
 	return &user, nil
 }
 
-// ExistsByEmail returns true when a user with that email already exists in the DB.
-// Assumes the caller has already lower-cased the email (normalised on write).
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.User{}).
@@ -65,7 +69,6 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	return count > 0, nil
 }
 
-// Create inserts a new user; the model's ID field is populated by GORM on return.
 func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
 		return fmt.Errorf("create user: %w", err)
@@ -73,10 +76,84 @@ func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-// Update saves all changed fields on the given user record.
 func (r *userRepository) Update(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Save(user).Error; err != nil {
 		return fmt.Errorf("update user: %w", err)
+	}
+	return nil
+}
+
+func (r *userRepository) FindAll(ctx context.Context, filter UserFilter) ([]models.User, int64, error) {
+	q := r.db.WithContext(ctx).Model(&models.User{})
+
+	if filter.Role != "" {
+		q = q.Where("role = ?", filter.Role)
+	}
+	if filter.Status != "" {
+		q = q.Where("status = ?", filter.Status)
+	}
+	if filter.Keyword != "" {
+		like := "%" + filter.Keyword + "%"
+		q = q.Where("full_name ILIKE ? OR email ILIKE ?", like, like)
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count all users: %w", err)
+	}
+
+	allowedSortBy := map[string]bool{
+		"created_at": true,
+		"email":      true,
+		"full_name":  true,
+	}
+	sortBy := "created_at"
+	if allowedSortBy[filter.SortBy] {
+		sortBy = filter.SortBy
+	}
+	sortOrder := "desc"
+	if filter.SortOrder == "asc" {
+		sortOrder = "asc"
+	}
+	q = q.Order(sortBy + " " + sortOrder)
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	q = q.Limit(limit).Offset((page - 1) * limit)
+
+	var users []models.User
+	if err := q.Find(&users).Error; err != nil {
+		return nil, 0, fmt.Errorf("find all users: %w", err)
+	}
+	return users, total, nil
+}
+
+func (r *userRepository) FindByIDWithRelations(ctx context.Context, id uint) (*models.User, error) {
+	var user models.User
+	if err := r.db.WithContext(ctx).
+		Preload("Bookings").
+		Preload("Bookings.Tour").
+		Preload("Reviews").
+		Preload("BankAccounts").
+		Preload("Ratings").
+		Preload("Ratings.Tour").
+		First(&user, id).Error; err != nil {
+		return nil, fmt.Errorf("find user by id with relations: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *userRepository) UpdateStatus(ctx context.Context, id uint, status string) error {
+	if err := r.db.WithContext(ctx).Model(&models.User{}).
+		Where("id = ?", id).
+		Update("status", status).Error; err != nil {
+		return fmt.Errorf("update user status: %w", err)
 	}
 	return nil
 }

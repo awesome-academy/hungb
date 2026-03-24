@@ -313,6 +313,20 @@ const (
 	ErrCtxReviewServiceAdminList  = "review service admin list"
 )
 
+// Admin — User Management
+var (
+	ErrCannotBanSelf  = NewAppError(http.StatusBadRequest, "cannot change own status")
+	ErrCannotBanAdmin = NewAppError(http.StatusBadRequest, "cannot change other admin status")
+)
+
+const (
+	ErrCtxUserFindAll               = "find all users"
+	ErrCtxUserCountAll              = "count all users"
+	ErrCtxUserFindByID              = "find user by id"
+	ErrCtxUserFindByIDWithRelations = "find user by id with relations"
+	ErrCtxUserUpdateStatus          = "update user status"
+)
+
 // Authorization
 var (
 	ErrNotAuthorizedUpdate = NewAppError(http.StatusForbidden, "not authorized to update")

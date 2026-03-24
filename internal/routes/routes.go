@@ -149,6 +149,10 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 	adminReviewService := services.NewReviewService(db, reviewRepo, likeRepo, commentRepo)
 	adminReviewHandler := adminHandlers.NewReviewHandler(adminReviewService)
 
+	userRepo := repository.NewUserRepository(db)
+	adminUserService := services.NewAdminUserService(userRepo)
+	adminUserHandler := adminHandlers.NewUserHandler(adminUserService)
+
 	admin := router.Group("/admin")
 	{
 		admin.GET("/", redirectToDashboard)
@@ -192,6 +196,10 @@ func setupAdminRoutes(router *gin.Engine, db *gorm.DB, authService *services.Aut
 		adminAuth.GET("/reviews", adminReviewHandler.List)
 		adminAuth.POST("/reviews/:id/approve", adminReviewHandler.Approve)
 		adminAuth.POST("/reviews/:id/reject", adminReviewHandler.Reject)
+
+		adminAuth.GET("/users", adminUserHandler.List)
+		adminAuth.GET("/users/:id", adminUserHandler.Detail)
+		adminAuth.POST("/users/:id/status", adminUserHandler.UpdateStatus)
 	}
 }
 
