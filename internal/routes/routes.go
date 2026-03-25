@@ -71,7 +71,7 @@ func setupPublicRoutes(router *gin.Engine, db *gorm.DB, authService *services.Au
 		public.GET("/login", authHandler.LoginForm)
 		public.POST("/login", authHandler.Login)
 		public.POST("/logout", authHandler.Logout)
-		public.GET("/verify-email", authHandler.VerifyEmail)
+		public.GET(constants.RouteVerifyEmail, authHandler.VerifyEmail)
 
 		public.GET("/reviews", reviewHandler.List)
 		public.GET("/reviews/:id", reviewHandler.Detail)

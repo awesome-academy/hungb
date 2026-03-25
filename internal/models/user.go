@@ -19,7 +19,7 @@ type User struct {
 	Role              string         `gorm:"size:20;default:'user';not null" json:"role"`
 	Status            string         `gorm:"size:20;default:'active';not null" json:"status"`
 	EmailVerified     bool           `gorm:"default:false" json:"email_verified"`
-	VerifyToken       string         `gorm:"size:255;index" json:"-"`
+	VerifyToken       string         `gorm:"size:255;uniqueIndex" json:"-"`
 	VerifyTokenExpiry *time.Time     `json:"-"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`

@@ -92,7 +92,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if h.authService.EmailVerificationRequired() {
 		c.HTML(http.StatusOK, "public/pages/register_success.html", gin.H{
 			"title": messages.TitleRegisterCheckEmail,
-			"email": form.Email,
+			"email": user.Email,
 		})
 		return
 	}
@@ -131,13 +131,14 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 
 	if err := middleware.SetSessionUserID(c, user.ID); err != nil {
 		slog.ErrorContext(c.Request.Context(), messages.LogLoginSetSessionFailed, "error", err)
-		middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgVerifySuccess, user.FullName))
-		c.Redirect(http.StatusFound, constants.RouteLogin)
-		return
 	}
 
-	middleware.SetFlashSuccess(c, fmt.Sprintf(messages.MsgVerifySuccess, user.FullName))
-	c.Redirect(http.StatusFound, constants.RouteHome)
+	c.HTML(http.StatusOK, "public/pages/verify_result.html", gin.H{
+		"title":   messages.TitleVerifyEmail,
+		"success": true,
+		"message": fmt.Sprintf(messages.MsgVerifySuccess, user.FullName),
+		"user":    user,
+	})
 }
 
 func (h *AuthHandler) LoginForm(c *gin.Context) {
