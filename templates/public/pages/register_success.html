@@ -1,0 +1,52 @@
+{{template "public_base" .}}
+
+{{define "content"}}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4 text-center">
+          <div class="mb-4">
+            <i class="bi bi-envelope-check text-primary" style="font-size: 4rem;"></i>
+          </div>
+
+          <h2 class="card-title mb-3">Kiểm tra email của bạn</h2>
+
+          <p class="text-muted">
+            Chúng tôi đã gửi một email xác nhận đến:
+          </p>
+
+          <p class="fw-bold text-primary fs-5 mb-4">
+            {{.email}}
+          </p>
+
+          <p class="text-muted small">
+            Vui lòng mở email và nhấn vào nút <strong>"Xác nhận tài khoản"</strong> để kích hoạt tài khoản của bạn.
+          </p>
+
+          <hr class="my-4" />
+
+          <div class="text-muted small">
+            <p class="mb-1">
+              <i class="bi bi-clock me-1"></i>
+              Link xác nhận có hiệu lực trong <strong>24 giờ</strong>.
+            </p>
+            <p class="mb-1">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Không nhận được email? Kiểm tra thư mục <strong>Spam/Junk</strong>.
+            </p>
+          </div>
+
+          <div class="mt-4">
+            <a href="/login" class="btn btn-outline-primary">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Đi đến trang đăng nhập
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{{end}}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"sun-booking-tours/internal/messages"
 	"sun-booking-tours/internal/models"
 
 	"gorm.io/gorm"
@@ -30,6 +31,7 @@ type UserRepo interface {
 	FindAll(ctx context.Context, filter UserFilter) ([]models.User, int64, error)
 	FindByIDWithRelations(ctx context.Context, id uint) (*models.User, error)
 	UpdateStatus(ctx context.Context, id uint, status string) error
+	FindByVerifyToken(ctx context.Context, token string) (*models.User, error)
 }
 
 // userRepository is the GORM-backed implementation of UserRepo.
@@ -44,7 +46,7 @@ func NewUserRepository(db *gorm.DB) UserRepo {
 func (r *userRepository) FindByID(ctx context.Context, id uint) (*models.User, error) {
 	var user models.User
 	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
-		return nil, fmt.Errorf("find user by id: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxFindUserByID, err)
 	}
 	return &user, nil
 }
@@ -54,7 +56,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*models
 	if err := r.db.WithContext(ctx).
 		Where("email = ?", email).
 		First(&user).Error; err != nil {
-		return nil, fmt.Errorf("find user by email: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxFindUserByEmail, err)
 	}
 	return &user, nil
 }
@@ -64,21 +66,21 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	if err := r.db.WithContext(ctx).Model(&models.User{}).
 		Where("email = ?", email).
 		Count(&count).Error; err != nil {
-		return false, fmt.Errorf("check email exists: %w", err)
+		return false, fmt.Errorf("%s: %w", messages.ErrCtxCheckEmailExists, err)
 	}
 	return count > 0, nil
 }
 
 func (r *userRepository) Create(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
-		return fmt.Errorf("create user: %w", err)
+		return fmt.Errorf("%s: %w", messages.ErrCtxCreateUser, err)
 	}
 	return nil
 }
 
 func (r *userRepository) Update(ctx context.Context, user *models.User) error {
 	if err := r.db.WithContext(ctx).Save(user).Error; err != nil {
-		return fmt.Errorf("update user: %w", err)
+		return fmt.Errorf("%s: %w", messages.ErrCtxUpdateUser, err)
 	}
 	return nil
 }
@@ -99,7 +101,7 @@ func (r *userRepository) FindAll(ctx context.Context, filter UserFilter) ([]mode
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("count all users: %w", err)
+		return nil, 0, fmt.Errorf("%s: %w", messages.ErrCtxCountAllUsers, err)
 	}
 
 	allowedSortBy := map[string]bool{
@@ -129,7 +131,7 @@ func (r *userRepository) FindAll(ctx context.Context, filter UserFilter) ([]mode
 
 	var users []models.User
 	if err := q.Find(&users).Error; err != nil {
-		return nil, 0, fmt.Errorf("find all users: %w", err)
+		return nil, 0, fmt.Errorf("%s: %w", messages.ErrCtxFindAllUsers, err)
 	}
 	return users, total, nil
 }
@@ -144,7 +146,7 @@ func (r *userRepository) FindByIDWithRelations(ctx context.Context, id uint) (*m
 		Preload("Ratings").
 		Preload("Ratings.Tour").
 		First(&user, id).Error; err != nil {
-		return nil, fmt.Errorf("find user by id with relations: %w", err)
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxFindUserByIDWithRelations, err)
 	}
 	return &user, nil
 }
@@ -153,7 +155,17 @@ func (r *userRepository) UpdateStatus(ctx context.Context, id uint, status strin
 	if err := r.db.WithContext(ctx).Model(&models.User{}).
 		Where("id = ?", id).
 		Update("status", status).Error; err != nil {
-		return fmt.Errorf("update user status: %w", err)
+		return fmt.Errorf("%s: %w", messages.ErrCtxUpdateUserStatus, err)
 	}
 	return nil
+}
+
+func (r *userRepository) FindByVerifyToken(ctx context.Context, token string) (*models.User, error) {
+	var user models.User
+	if err := r.db.WithContext(ctx).
+		Where("verify_token = ?", token).
+		First(&user).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", messages.ErrCtxFindUserByVerifyToken, err)
+	}
+	return &user, nil
 }

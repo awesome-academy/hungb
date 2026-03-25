@@ -12,10 +12,11 @@ const (
 )
 
 const (
-	RouteHome     = "/"
-	RouteLogin    = "/login"
-	RouteRegister = "/register"
-	RouteLogout   = "/logout"
+	RouteHome        = "/"
+	RouteLogin       = "/login"
+	RouteRegister    = "/register"
+	RouteLogout      = "/logout"
+	RouteVerifyEmail = "/verify-email"
 )
 
 const (

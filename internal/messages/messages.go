@@ -19,6 +19,27 @@ const (
 	MsgRegisterAutoLoginFail = "Đăng ký thành công nhưng không thể đăng nhập tự động. Vui lòng đăng nhập."
 )
 
+// ── Auth — Email Verification
+const (
+	TitleRegisterCheckEmail = "Kiểm tra email"
+	TitleVerifyEmail        = "Xác nhận email"
+
+	MsgVerifyEmailSent    = "Chúng tôi đã gửi email xác nhận đến %s. Vui lòng kiểm tra hộp thư (và thư rác) để kích hoạt tài khoản."
+	MsgVerifySuccess      = "Email đã được xác nhận thành công! Chào mừng %s."
+	ErrVerifyTokenInvalid = "Link xác nhận không hợp lệ hoặc đã được sử dụng."
+	ErrVerifyTokenExpired = "Link xác nhận đã hết hạn (24 giờ). Vui lòng đăng ký lại."
+	ErrVerifyFailed       = "Không thể xác nhận email. Vui lòng thử lại."
+
+	LogVerifyEmailFailed = "verify email: failed"
+	LogVerifyFindByToken = "verify email: find by token"
+	LogVerifyUpdateUser  = "verify email: update user"
+	LogRegisterGenToken  = "register: generate verify token"
+	LogRegisterSendEmail = "register: send verification email"
+	LogEmailSMTPDisabled = "SMTP not configured, email sending disabled"
+	LogEmailSendFailed   = "email: send failed"
+	LogEmailSent         = "email: verification email sent"
+)
+
 // ── Auth — Login
 
 const (
@@ -90,6 +111,11 @@ const (
 	LogOAuthBeginFailed    = "oauth: begin auth failed"
 	LogOAuthCallbackFailed = "oauth: complete auth failed"
 	LogOAuthLoginFailed    = "oauth: login/register failed"
+	LogOAuthFindSocial     = "oauth: find social account"
+	LogOAuthFindLinkedUser = "oauth: find linked user"
+	LogOAuthFindByEmail    = "oauth: find user by email"
+	LogOAuthLinkSocial     = "oauth: link social account"
+	LogOAuthCreateUser     = "oauth: create user with social account"
 )
 
 // ── Admin dashboard
@@ -112,6 +138,20 @@ const (
 	ErrCtxSumMonthRevenue    = "sum month revenue"
 	ErrCtxRecentBookings     = "recent bookings"
 	ErrCtxPendingReviews     = "pending reviews"
+)
+
+// ── User repository error context
+const (
+	ErrCtxFindUserByID              = "find user by id"
+	ErrCtxFindUserByEmail           = "find user by email"
+	ErrCtxCheckEmailExists          = "check email exists"
+	ErrCtxCreateUser                = "create user"
+	ErrCtxUpdateUser                = "update user"
+	ErrCtxCountAllUsers             = "count all users"
+	ErrCtxFindAllUsers              = "find all users"
+	ErrCtxFindUserByIDWithRelations = "find user by id with relations"
+	ErrCtxUpdateUserStatus          = "update user status"
+	ErrCtxFindUserByVerifyToken     = "find user by verify token"
 )
 
 // ── Admin — Category Management

@@ -30,6 +30,12 @@ type Config struct {
 	FBClientSecret     string
 	TwitterAPIKey      string
 	TwitterAPISecret   string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func (c *Config) DSN() string {
@@ -72,6 +78,12 @@ func LoadConfig() *Config {
 		FBClientSecret:     getEnv("FACEBOOK_CLIENT_SECRET", ""),
 		TwitterAPIKey:      getEnv("TWITTER_API_KEY", ""),
 		TwitterAPISecret:   getEnv("TWITTER_API_SECRET", ""),
+
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
 	}
 }
 

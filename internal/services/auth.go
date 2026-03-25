@@ -2,10 +2,14 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
+	"time"
 
 	"sun-booking-tours/internal/constants"
 	appErrors "sun-booking-tours/internal/errors"
@@ -17,7 +21,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Sentinel errors for Login — distinguishable by appErrors.Is.
 var (
 	ErrAdminMustUsePortal = appErrors.NewAppError(403, messages.AuthErrAdminMustUsePortal)
 	ErrAccountBanned      = appErrors.NewAppError(403, messages.AuthErrAccountBanned)
@@ -40,15 +43,14 @@ type AuthService struct {
 	db             *gorm.DB
 	userRepo       repository.UserRepo
 	socialAcctRepo repository.SocialAccountRepo
+	emailService   *EmailService
+	baseURL        string
 }
 
-func NewAuthService(db *gorm.DB, userRepo repository.UserRepo, socialAcctRepo repository.SocialAccountRepo) *AuthService {
-	return &AuthService{db: db, userRepo: userRepo, socialAcctRepo: socialAcctRepo}
+func NewAuthService(db *gorm.DB, userRepo repository.UserRepo, socialAcctRepo repository.SocialAccountRepo, emailService *EmailService, baseURL string) *AuthService {
+	return &AuthService{db: db, userRepo: userRepo, socialAcctRepo: socialAcctRepo, emailService: emailService, baseURL: baseURL}
 }
 
-// Login verifies credentials and returns the authenticated user.
-// Returns ErrInvalidCredentials for wrong email/password, ErrAccountBanned,
-// ErrAccountInactive, or ErrAdminMustUsePortal for other rejection cases.
 func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User, error) {
 	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
 
@@ -79,7 +81,6 @@ func (s *AuthService) Login(ctx context.Context, form *LoginForm) (*models.User,
 	return user, nil
 }
 
-// AdminLogin verifies credentials and ensures the user has admin role.
 func (s *AuthService) AdminLogin(ctx context.Context, form *LoginForm) (*models.User, error) {
 	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
 
@@ -110,33 +111,23 @@ func (s *AuthService) AdminLogin(ctx context.Context, form *LoginForm) (*models.
 	return user, nil
 }
 
-// OAuthLogin finds or creates a user from OAuth provider data.
-// If the social account exists, returns the linked user.
-// If the email matches an existing user, links the social account.
-// Otherwise creates a new user and social account in a single transaction.
 func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, email, name, avatarURL string) (*models.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
-	// Some providers (e.g. Twitter) may not return an email address.
-	// Fail fast before attempting any DB lookup or creation.
 	if email == "" {
 		return nil, appErrors.NewAppError(422, messages.ErrOAuthMissingEmail)
 	}
 
-	// Check if social account already exists.
-	// Distinguish "not found" (normal case) from a real DB error.
 	socialAcct, err := s.socialAcctRepo.FindByProvider(ctx, provider, providerID)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			slog.ErrorContext(ctx, "oauth: find social account", "provider", provider, "error", err)
+			slog.ErrorContext(ctx, messages.LogOAuthFindSocial, "provider", provider, "error", err)
 			return nil, appErrors.ErrInternalServerError
 		}
-		// ErrRecordNotFound — no linked account yet, continue below.
 	} else {
-		// Social account found — load and validate the linked user.
 		user, err := s.userRepo.FindByID(ctx, socialAcct.UserID)
 		if err != nil {
-			slog.ErrorContext(ctx, "oauth: find linked user", "user_id", socialAcct.UserID, "error", err)
+			slog.ErrorContext(ctx, messages.LogOAuthFindLinkedUser, "user_id", socialAcct.UserID, "error", err)
 			return nil, appErrors.ErrInternalServerError
 		}
 		if user.Role == constants.RoleAdmin {
@@ -151,10 +142,9 @@ func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, emai
 		return user, nil
 	}
 
-	// Check if a user with the same email already exists.
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		slog.ErrorContext(ctx, "oauth: find user by email", "email", email, "error", err)
+		slog.ErrorContext(ctx, messages.LogOAuthFindByEmail, "email", email, "error", err)
 		return nil, appErrors.ErrInternalServerError
 	}
 
@@ -168,21 +158,17 @@ func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, emai
 		case constants.StatusInactive:
 			return nil, ErrAccountInactive
 		}
-		// Link social account to the existing user.
 		if err := s.socialAcctRepo.Create(ctx, &models.SocialAccount{
 			UserID:     user.ID,
 			Provider:   provider,
 			ProviderID: providerID,
 		}); err != nil {
-			slog.ErrorContext(ctx, "oauth: link social account", "error", err)
+			slog.ErrorContext(ctx, messages.LogOAuthLinkSocial, "error", err)
 			return nil, appErrors.ErrInternalServerError
 		}
 		return user, nil
 	}
 
-	// Create a new user and social account in a single transaction so that
-	// a failure to persist the social account does not leave an orphaned user
-	// who can never log in via this provider again.
 	var newUser *models.User
 	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		txUserRepo := repository.NewUserRepository(tx)
@@ -209,21 +195,17 @@ func (s *AuthService) OAuthLogin(ctx context.Context, provider, providerID, emai
 		if appErrors.IsDuplicateEntryError(txErr) {
 			return nil, appErrors.ErrEmailAlreadyTaken
 		}
-		slog.ErrorContext(ctx, "oauth: create user with social account", "error", txErr)
+		slog.ErrorContext(ctx, messages.LogOAuthCreateUser, "error", txErr)
 		return nil, appErrors.ErrInternalServerError
 	}
 
 	return newUser, nil
 }
 
-// Register validates form data, hashes the password, and creates a new user.
-// Returns the created user or an *AppError describing what went wrong.
 func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models.User, error) {
-	// Normalise email and name so stored values are always consistent.
 	form.Email = strings.TrimSpace(strings.ToLower(form.Email))
 	form.FullName = strings.TrimSpace(form.FullName)
 
-	// Password confirmation check.
 	if form.Password != form.PasswordConfirm {
 		return nil, &appErrors.AppError{
 			Status:  400,
@@ -231,7 +213,6 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 		}
 	}
 
-	// Best-effort uniqueness pre-check (optimistic path; not a hard guarantee).
 	exists, err := s.userRepo.ExistsByEmail(ctx, form.Email)
 	if err != nil {
 		slog.ErrorContext(ctx, messages.LogRegisterCheckEmailExists, "error", err)
@@ -241,31 +222,121 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 		return nil, appErrors.ErrEmailAlreadyTaken
 	}
 
-	// Hash password.
 	hashed, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.ErrorContext(ctx, messages.LogRegisterHashPassword, "error", err)
 		return nil, appErrors.ErrInternalServerError
 	}
 
-	user := &models.User{
-		FullName: form.FullName,
-		Email:    form.Email,
-		Password: string(hashed),
-		Role:     constants.RoleUser,
-		Status:   constants.StatusActive,
+	status := constants.StatusActive
+	emailVerified := true
+	var verifyToken string
+	var tokenExpiry *time.Time
+
+	if s.emailService != nil && s.emailService.IsEnabled() {
+		status = constants.StatusInactive
+		emailVerified = false
+		token, err := generateVerifyToken()
+		if err != nil {
+			slog.ErrorContext(ctx, messages.LogRegisterGenToken, "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		verifyToken = token
+		exp := time.Now().Add(24 * time.Hour)
+		tokenExpiry = &exp
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		// Two concurrent registrations can both pass ExistsByEmail and then one
-		// will hit the DB unique constraint. Map that to the correct sentinel so
-		// the user sees a proper message and no internal details leak.
-		if appErrors.IsDuplicateEntryError(err) {
+	user := &models.User{
+		FullName:          form.FullName,
+		Email:             form.Email,
+		Password:          string(hashed),
+		Role:              constants.RoleUser,
+		Status:            status,
+		EmailVerified:     emailVerified,
+		VerifyToken:       verifyToken,
+		VerifyTokenExpiry: tokenExpiry,
+	}
+
+	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txUserRepo := repository.NewUserRepository(tx)
+
+		if err := txUserRepo.Create(ctx, user); err != nil {
+			if appErrors.IsDuplicateEntryError(err) {
+				return appErrors.ErrEmailAlreadyTaken
+			}
+			slog.ErrorContext(ctx, messages.LogRegisterCreateUser, "error", err)
+			return appErrors.ErrInternalServerError
+		}
+
+		if verifyToken != "" {
+			verifyPath, err := url.JoinPath(s.baseURL, constants.RouteVerifyEmail)
+			if err != nil {
+				slog.ErrorContext(ctx, "register: build verify URL", "error", err)
+				return appErrors.ErrInternalServerError
+			}
+			verifyURL := verifyPath + "?token=" + url.QueryEscape(verifyToken)
+			if err := s.emailService.SendVerificationEmail(user.Email, user.FullName, verifyURL); err != nil {
+				slog.ErrorContext(ctx, messages.LogRegisterSendEmail, "email", user.Email, "error", err)
+				return fmt.Errorf("send verification email: %w", err)
+			}
+		}
+
+		return nil
+	})
+
+	if txErr != nil {
+		if appErrors.Is(txErr, appErrors.ErrEmailAlreadyTaken) {
 			return nil, appErrors.ErrEmailAlreadyTaken
 		}
-		slog.ErrorContext(ctx, messages.LogRegisterCreateUser, "error", err)
-		return nil, fmt.Errorf("%w", appErrors.ErrInternalServerError)
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	return user, nil
+}
+
+func (s *AuthService) VerifyEmail(ctx context.Context, token string) (*models.User, error) {
+	if token == "" {
+		return nil, appErrors.NewAppError(400, messages.ErrVerifyTokenInvalid)
+	}
+
+	user, err := s.userRepo.FindByVerifyToken(ctx, token)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, appErrors.NewAppError(400, messages.ErrVerifyTokenInvalid)
+		}
+		slog.ErrorContext(ctx, messages.LogVerifyFindByToken, "error", err)
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	if user.VerifyTokenExpiry != nil && time.Now().After(*user.VerifyTokenExpiry) {
+		return nil, appErrors.NewAppError(400, messages.ErrVerifyTokenExpired)
+	}
+
+	if user.EmailVerified {
+		return user, nil
+	}
+
+	user.EmailVerified = true
+	user.Status = constants.StatusActive
+	user.VerifyToken = ""
+	user.VerifyTokenExpiry = nil
+
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		slog.ErrorContext(ctx, messages.LogVerifyUpdateUser, "error", err)
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	return user, nil
+}
+
+func (s *AuthService) EmailVerificationRequired() bool {
+	return s.emailService != nil && s.emailService.IsEnabled()
+}
+
+func generateVerifyToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
