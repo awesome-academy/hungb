@@ -1,0 +1,2124 @@
+openapi: 3.0.3
+info:
+  title: SUN Booking Tours API
+  description: |
+    API documentation for SUN Booking Tours — a tour booking web application with 2 separate sites:
+    - **Public Site** (`/`) — Guest (unauthenticated) + User (authenticated)
+    - **Admin Site** (`/admin/*`) — Admin only (role=admin)
+
+    This is a Server-Side Rendering (SSR) application using Go html/template.
+    Form submissions use `application/x-www-form-urlencoded`.
+    Authentication is session-based (cookie store).
+  version: 1.0.0
+  contact:
+    name: SUN Booking Tours Team
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Health
+    description: Health check endpoint
+  - name: Public - Home
+    description: Homepage
+  - name: Public - Auth
+    description: User authentication (register, login, logout, email verification)
+  - name: Public - OAuth
+    description: OAuth2 social login (Google, Facebook, Twitter)
+  - name: Public - Tours
+    description: Browse and view tours
+  - name: Public - Reviews
+    description: Browse and view reviews (public)
+  - name: Public - Profile
+    description: User profile management (requires login)
+  - name: Public - Bank Accounts
+    description: User bank account management (requires login)
+  - name: Public - Bookings
+    description: Tour booking (requires login)
+  - name: Public - Ratings
+    description: Tour rating (requires login)
+  - name: Public - Reviews Management
+    description: User review CRUD, likes, comments (requires login)
+  - name: Admin - Auth
+    description: Admin authentication
+  - name: Admin - Dashboard
+    description: Admin dashboard with stats
+  - name: Admin - Categories
+    description: Category management (requires admin)
+  - name: Admin - Tours
+    description: Tour management (requires admin)
+  - name: Admin - Schedules
+    description: Tour schedule management (requires admin)
+  - name: Admin - Bookings
+    description: Booking management (requires admin)
+  - name: Admin - Revenue
+    description: Revenue analytics (requires admin)
+  - name: Admin - Reviews
+    description: Review moderation (requires admin)
+  - name: Admin - Users
+    description: User management (requires admin)
+
+paths:
+  # ============================================================
+  # HEALTH CHECK
+  # ============================================================
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns application health status.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # ============================================================
+  # PUBLIC SITE — HOME
+  # ============================================================
+  /:
+    get:
+      tags: [Public - Home]
+      summary: Homepage
+      description: Display homepage with featured tours.
+      operationId: publicHome
+      responses:
+        "200":
+          description: HTML page — homepage
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ============================================================
+  # PUBLIC SITE — AUTH
+  # ============================================================
+  /register:
+    get:
+      tags: [Public - Auth]
+      summary: Show registration form
+      operationId: publicRegisterForm
+      responses:
+        "200":
+          description: HTML page — registration form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Auth]
+      summary: Register a new user
+      operationId: publicRegister
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RegisterForm"
+      responses:
+        "302":
+          description: Redirect to homepage on success, or back to form on error
+        "200":
+          description: HTML page — re-rendered form with validation errors
+
+  /login:
+    get:
+      tags: [Public - Auth]
+      summary: Show login form
+      operationId: publicLoginForm
+      responses:
+        "200":
+          description: HTML page — login form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Auth]
+      summary: Login user
+      operationId: publicLogin
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/LoginForm"
+      responses:
+        "302":
+          description: Redirect to homepage on success
+        "200":
+          description: HTML page — re-rendered form with error message
+
+  /logout:
+    post:
+      tags: [Public - Auth]
+      summary: Logout user
+      operationId: publicLogout
+      responses:
+        "302":
+          description: Redirect to homepage
+
+  /verify-email:
+    get:
+      tags: [Public - Auth]
+      summary: Verify email address
+      description: Verify user's email using the token sent in verification email.
+      operationId: publicVerifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email verification token
+      responses:
+        "200":
+          description: HTML page — verification result (success or failure)
+          content:
+            text/html:
+              schema:
+                type: string
+        "302":
+          description: Redirect on error
+
+  # ============================================================
+  # PUBLIC SITE — OAUTH
+  # ============================================================
+  /auth/{provider}:
+    get:
+      tags: [Public - OAuth]
+      summary: Begin OAuth flow
+      description: Redirect user to OAuth provider (Google, Facebook, Twitter) for authentication.
+      operationId: oauthBegin
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook, twitter]
+          description: OAuth provider name
+      responses:
+        "302":
+          description: Redirect to OAuth provider
+
+  /auth/{provider}/callback:
+    get:
+      tags: [Public - OAuth]
+      summary: OAuth callback
+      description: Handle callback from OAuth provider after user authorizes the app.
+      operationId: oauthCallback
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, facebook, twitter]
+          description: OAuth provider name
+      responses:
+        "302":
+          description: Redirect to homepage on success, or login page on failure
+
+  # ============================================================
+  # PUBLIC SITE — TOURS
+  # ============================================================
+  /tours:
+    get:
+      tags: [Public - Tours]
+      summary: List tours
+      description: Browse available tours with filters, search, and pagination.
+      operationId: publicTourList
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category slug
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search keyword (title, description)
+        - name: location
+          in: query
+          schema:
+            type: string
+          description: Filter by location
+        - name: min_price
+          in: query
+          schema:
+            type: number
+            format: float
+          description: Minimum price filter
+        - name: max_price
+          in: query
+          schema:
+            type: number
+            format: float
+          description: Maximum price filter
+        - name: min_duration
+          in: query
+          schema:
+            type: integer
+          description: Minimum duration (days)
+        - name: max_duration
+          in: query
+          schema:
+            type: integer
+          description: Maximum duration (days)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [price_asc, price_desc, rating]
+          description: Sort order
+      responses:
+        "200":
+          description: HTML page — tours listing with pagination
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /tours/{slug}:
+    get:
+      tags: [Public - Tours]
+      summary: Tour detail
+      description: Show tour details including schedules, ratings, and category info.
+      operationId: publicTourDetail
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tour slug (URL-friendly identifier)
+      responses:
+        "200":
+          description: HTML page — tour detail
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Tour not found
+
+  # ============================================================
+  # PUBLIC SITE — REVIEWS (PUBLIC)
+  # ============================================================
+  /reviews:
+    get:
+      tags: [Public - Reviews]
+      summary: List reviews
+      description: Browse approved reviews with filters and pagination.
+      operationId: publicReviewList
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [place, food, news]
+          description: Filter by review type
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search keyword
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Sort order
+      responses:
+        "200":
+          description: HTML page — reviews listing
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /reviews/{id}:
+    get:
+      tags: [Public - Reviews]
+      summary: Review detail
+      description: Show review detail with comments.
+      operationId: publicReviewDetail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Review ID
+      responses:
+        "200":
+          description: HTML page — review detail with comments
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Review not found
+
+  # ============================================================
+  # PUBLIC SITE — PROFILE (AUTHENTICATED)
+  # ============================================================
+  /profile:
+    get:
+      tags: [Public - Profile]
+      summary: Show user profile
+      operationId: publicProfileShow
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: HTML page — user profile
+          content:
+            text/html:
+              schema:
+                type: string
+        "302":
+          description: Redirect to login if not authenticated
+
+  /profile/edit:
+    get:
+      tags: [Public - Profile]
+      summary: Show edit profile form
+      operationId: publicProfileEditForm
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: HTML page — edit profile form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Profile]
+      summary: Update user profile
+      operationId: publicProfileUpdate
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdateForm"
+      responses:
+        "302":
+          description: Redirect to profile page on success
+        "200":
+          description: HTML page — re-rendered form with errors
+
+  # ============================================================
+  # PUBLIC SITE — BANK ACCOUNTS (AUTHENTICATED)
+  # ============================================================
+  /bank-accounts:
+    get:
+      tags: [Public - Bank Accounts]
+      summary: List bank accounts
+      operationId: publicBankAccountList
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: HTML page — bank accounts list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /bank-accounts/create:
+    get:
+      tags: [Public - Bank Accounts]
+      summary: Show create bank account form
+      operationId: publicBankAccountCreateForm
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: HTML page — bank account form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Bank Accounts]
+      summary: Create bank account
+      operationId: publicBankAccountCreate
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/BankAccountForm"
+      responses:
+        "302":
+          description: Redirect to bank accounts list on success
+        "200":
+          description: HTML page — re-rendered form with errors
+
+  /bank-accounts/{id}/edit:
+    get:
+      tags: [Public - Bank Accounts]
+      summary: Show edit bank account form
+      operationId: publicBankAccountEditForm
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — bank account edit form
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Bank account not found
+    post:
+      tags: [Public - Bank Accounts]
+      summary: Update bank account
+      operationId: publicBankAccountUpdate
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/BankAccountForm"
+      responses:
+        "302":
+          description: Redirect to bank accounts list on success
+
+  /bank-accounts/{id}/delete:
+    post:
+      tags: [Public - Bank Accounts]
+      summary: Delete bank account
+      operationId: publicBankAccountDelete
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to bank accounts list
+
+  /bank-accounts/{id}/set-default:
+    post:
+      tags: [Public - Bank Accounts]
+      summary: Set bank account as default
+      operationId: publicBankAccountSetDefault
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to bank accounts list
+
+  # ============================================================
+  # PUBLIC SITE — BOOKINGS (AUTHENTICATED)
+  # ============================================================
+  /tours/{slug}/book:
+    get:
+      tags: [Public - Bookings]
+      summary: Show booking form
+      description: Display booking form for a specific tour schedule.
+      operationId: publicBookingForm
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tour slug
+        - name: schedule_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Schedule ID to book
+      responses:
+        "200":
+          description: HTML page — booking form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Bookings]
+      summary: Create booking
+      description: Submit a new booking for a tour schedule.
+      operationId: publicBookingCreate
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tour slug
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/BookingCreateForm"
+      responses:
+        "200":
+          description: HTML page — booking confirmation
+          content:
+            text/html:
+              schema:
+                type: string
+        "302":
+          description: Redirect on error
+
+  /my/bookings:
+    get:
+      tags: [Public - Bookings]
+      summary: List my bookings
+      description: List current user's bookings with pagination.
+      operationId: publicMyBookingList
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+      responses:
+        "200":
+          description: HTML page — user's bookings list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /my/bookings/{id}:
+    get:
+      tags: [Public - Bookings]
+      summary: Booking detail
+      description: Show booking detail for the current user.
+      operationId: publicMyBookingDetail
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — booking detail
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Booking not found
+
+  /my/bookings/{id}/cancel:
+    post:
+      tags: [Public - Bookings]
+      summary: Cancel booking
+      description: Cancel a pending booking.
+      operationId: publicMyBookingCancel
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to booking detail
+
+  # ============================================================
+  # PUBLIC SITE — RATINGS (AUTHENTICATED)
+  # ============================================================
+  /tours/{slug}/rate:
+    post:
+      tags: [Public - Ratings]
+      summary: Rate a tour
+      description: Submit or update a rating for a tour. Each user can rate a tour only once.
+      operationId: publicTourRate
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tour slug
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RatingForm"
+      responses:
+        "302":
+          description: Redirect to tour detail page
+
+  # ============================================================
+  # PUBLIC SITE — REVIEWS MANAGEMENT (AUTHENTICATED)
+  # ============================================================
+  /reviews/create:
+    get:
+      tags: [Public - Reviews Management]
+      summary: Show create review form
+      operationId: publicReviewCreateForm
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: HTML page — review creation form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Reviews Management]
+      summary: Create review
+      operationId: publicReviewCreate
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ReviewForm"
+      responses:
+        "302":
+          description: Redirect to my reviews list
+
+  /reviews/{id}/like:
+    post:
+      tags: [Public - Reviews Management]
+      summary: Toggle like on review
+      description: Like or unlike a review (toggle).
+      operationId: publicReviewToggleLike
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to review detail
+
+  /reviews/{id}/comments:
+    post:
+      tags: [Public - Reviews Management]
+      summary: Add comment to review
+      operationId: publicReviewAddComment
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  description: Comment content
+      responses:
+        "302":
+          description: Redirect to review detail
+
+  /comments/{id}/reply:
+    post:
+      tags: [Public - Reviews Management]
+      summary: Reply to a comment
+      operationId: publicCommentReply
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [review_id, content]
+              properties:
+                review_id:
+                  type: integer
+                  description: ID of the review the comment belongs to
+                content:
+                  type: string
+                  description: Reply content
+      responses:
+        "302":
+          description: Redirect to review detail
+
+  /comments/{id}/delete:
+    post:
+      tags: [Public - Reviews Management]
+      summary: Delete a comment
+      operationId: publicCommentDelete
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [review_id]
+              properties:
+                review_id:
+                  type: integer
+                  description: ID of the review the comment belongs to
+      responses:
+        "302":
+          description: Redirect to review detail
+
+  /my/reviews:
+    get:
+      tags: [Public - Reviews Management]
+      summary: List my reviews
+      description: List current user's reviews with pagination.
+      operationId: publicMyReviewList
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+      responses:
+        "200":
+          description: HTML page — user's reviews list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /my/reviews/{id}/edit:
+    get:
+      tags: [Public - Reviews Management]
+      summary: Show edit review form
+      operationId: publicMyReviewEditForm
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — review edit form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Public - Reviews Management]
+      summary: Update review
+      operationId: publicMyReviewUpdate
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ReviewForm"
+      responses:
+        "302":
+          description: Redirect to my reviews list
+
+  /my/reviews/{id}/delete:
+    post:
+      tags: [Public - Reviews Management]
+      summary: Delete review
+      operationId: publicMyReviewDelete
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to my reviews list
+
+  # ============================================================
+  # ADMIN SITE — AUTH
+  # ============================================================
+  /admin/:
+    get:
+      tags: [Admin - Auth]
+      summary: Admin root redirect
+      description: Redirects to admin dashboard.
+      operationId: adminRootRedirect
+      responses:
+        "302":
+          description: Redirect to /admin/dashboard
+
+  /admin/login:
+    get:
+      tags: [Admin - Auth]
+      summary: Show admin login form
+      operationId: adminLoginForm
+      responses:
+        "200":
+          description: HTML page — admin login form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Auth]
+      summary: Admin login
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/LoginForm"
+      responses:
+        "302":
+          description: Redirect to admin dashboard on success
+        "200":
+          description: HTML page — re-rendered form with error
+
+  /admin/logout:
+    post:
+      tags: [Admin - Auth]
+      summary: Admin logout
+      operationId: adminLogout
+      responses:
+        "302":
+          description: Redirect to admin login page
+
+  # ============================================================
+  # ADMIN SITE — DASHBOARD
+  # ============================================================
+  /admin/dashboard:
+    get:
+      tags: [Admin - Dashboard]
+      summary: Admin dashboard
+      description: Show admin dashboard with statistics (total users, tours, bookings, revenue).
+      operationId: adminDashboard
+      security:
+        - adminSessionAuth: []
+      responses:
+        "200":
+          description: HTML page — admin dashboard
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ============================================================
+  # ADMIN SITE — CATEGORIES
+  # ============================================================
+  /admin/categories:
+    get:
+      tags: [Admin - Categories]
+      summary: List categories
+      operationId: adminCategoryList
+      security:
+        - adminSessionAuth: []
+      responses:
+        "200":
+          description: HTML page — categories list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/categories/create:
+    get:
+      tags: [Admin - Categories]
+      summary: Show create category form
+      operationId: adminCategoryCreateForm
+      security:
+        - adminSessionAuth: []
+      responses:
+        "200":
+          description: HTML page — category form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Categories]
+      summary: Create category
+      operationId: adminCategoryCreate
+      security:
+        - adminSessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CategoryForm"
+      responses:
+        "302":
+          description: Redirect to categories list on success
+
+  /admin/categories/{id}/edit:
+    get:
+      tags: [Admin - Categories]
+      summary: Show edit category form
+      operationId: adminCategoryEditForm
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — category edit form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Categories]
+      summary: Update category
+      operationId: adminCategoryUpdate
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CategoryForm"
+      responses:
+        "302":
+          description: Redirect to categories list
+
+  /admin/categories/{id}/delete:
+    post:
+      tags: [Admin - Categories]
+      summary: Delete category
+      operationId: adminCategoryDelete
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to categories list
+
+  # ============================================================
+  # ADMIN SITE — TOURS
+  # ============================================================
+  /admin/tours:
+    get:
+      tags: [Admin - Tours]
+      summary: List tours
+      description: List all tours with filters and pagination.
+      operationId: adminTourList
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, inactive]
+          description: Filter by tour status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search keyword
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by category ID
+      responses:
+        "200":
+          description: HTML page — tours list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/tours/create:
+    get:
+      tags: [Admin - Tours]
+      summary: Show create tour form
+      operationId: adminTourCreateForm
+      security:
+        - adminSessionAuth: []
+      responses:
+        "200":
+          description: HTML page — tour form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Tours]
+      summary: Create tour
+      operationId: adminTourCreate
+      security:
+        - adminSessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TourForm"
+      responses:
+        "302":
+          description: Redirect to tours list on success
+
+  /admin/tours/{id}/edit:
+    get:
+      tags: [Admin - Tours]
+      summary: Show edit tour form
+      operationId: adminTourEditForm
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — tour edit form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Tours]
+      summary: Update tour
+      operationId: adminTourUpdate
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TourForm"
+      responses:
+        "302":
+          description: Redirect to tours list
+
+  /admin/tours/{id}/delete:
+    post:
+      tags: [Admin - Tours]
+      summary: Delete tour
+      description: Soft-delete a tour.
+      operationId: adminTourDelete
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to tours list
+
+  # ============================================================
+  # ADMIN SITE — SCHEDULES
+  # ============================================================
+  /admin/tours/{id}/schedules:
+    get:
+      tags: [Admin - Schedules]
+      summary: List tour schedules
+      description: List all schedules for a specific tour.
+      operationId: adminScheduleList
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — schedules list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/tours/{id}/schedules/create:
+    get:
+      tags: [Admin - Schedules]
+      summary: Show create schedule form
+      operationId: adminScheduleCreateForm
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — schedule form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Schedules]
+      summary: Create schedule
+      operationId: adminScheduleCreate
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ScheduleForm"
+      responses:
+        "302":
+          description: Redirect to schedule list
+
+  /admin/schedules/{id}/edit:
+    get:
+      tags: [Admin - Schedules]
+      summary: Show edit schedule form
+      operationId: adminScheduleEditForm
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — schedule edit form
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [Admin - Schedules]
+      summary: Update schedule
+      operationId: adminScheduleUpdate
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/ScheduleForm"
+      responses:
+        "302":
+          description: Redirect to schedule list
+
+  /admin/schedules/{id}/delete:
+    post:
+      tags: [Admin - Schedules]
+      summary: Delete schedule
+      operationId: adminScheduleDelete
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to schedule list
+
+  # ============================================================
+  # ADMIN SITE — BOOKINGS
+  # ============================================================
+  /admin/bookings:
+    get:
+      tags: [Admin - Bookings]
+      summary: List bookings
+      description: List all bookings with filters and pagination.
+      operationId: adminBookingList
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, completed]
+          description: Filter by booking status
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by user ID
+        - name: tour_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by tour ID
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter bookings from this date (YYYY-MM-DD)
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter bookings up to this date (YYYY-MM-DD)
+      responses:
+        "200":
+          description: HTML page — bookings list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/bookings/{id}/confirm:
+    post:
+      tags: [Admin - Bookings]
+      summary: Confirm booking
+      description: Change booking status from pending to confirmed.
+      operationId: adminBookingConfirm
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to bookings list
+
+  /admin/bookings/{id}/cancel:
+    post:
+      tags: [Admin - Bookings]
+      summary: Cancel booking
+      description: Cancel a booking and restore available slots.
+      operationId: adminBookingCancel
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to bookings list
+
+  /admin/bookings/{id}/complete:
+    post:
+      tags: [Admin - Bookings]
+      summary: Complete booking
+      description: Mark a confirmed booking as completed.
+      operationId: adminBookingComplete
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to bookings list with status=completed filter
+
+  # ============================================================
+  # ADMIN SITE — REVENUE
+  # ============================================================
+  /admin/revenue:
+    get:
+      tags: [Admin - Revenue]
+      summary: Revenue analytics
+      description: Show revenue report with date range and tour filters.
+      operationId: adminRevenueIndex
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for revenue report (YYYY-MM-DD)
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for revenue report (YYYY-MM-DD)
+        - name: tour_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by tour ID
+      responses:
+        "200":
+          description: HTML page — revenue analytics
+          content:
+            text/html:
+              schema:
+                type: string
+
+  # ============================================================
+  # ADMIN SITE — REVIEWS MODERATION
+  # ============================================================
+  /admin/reviews:
+    get:
+      tags: [Admin - Reviews]
+      summary: List reviews for moderation
+      description: List all reviews with filters and pagination for admin moderation.
+      operationId: adminReviewList
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+          description: Filter by review status
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [place, food, news]
+          description: Filter by review type
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: Search keyword
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by user ID
+      responses:
+        "200":
+          description: HTML page — reviews list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/reviews/{id}/approve:
+    post:
+      tags: [Admin - Reviews]
+      summary: Approve review
+      description: Approve a pending review.
+      operationId: adminReviewApprove
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to reviews list
+
+  /admin/reviews/{id}/reject:
+    post:
+      tags: [Admin - Reviews]
+      summary: Reject review
+      description: Reject a pending review.
+      operationId: adminReviewReject
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "302":
+          description: Redirect to reviews list
+
+  # ============================================================
+  # ADMIN SITE — USERS
+  # ============================================================
+  /admin/users:
+    get:
+      tags: [Admin - Users]
+      summary: List users
+      description: List all users with filters, sorting, and pagination.
+      operationId: adminUserList
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, user]
+          description: Filter by role
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, banned]
+          description: Filter by status
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: Search by name or email
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+          description: Sort field
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Sort direction
+      responses:
+        "200":
+          description: HTML page — users list
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /admin/users/{id}:
+    get:
+      tags: [Admin - Users]
+      summary: User detail
+      description: Show detailed user information including related data.
+      operationId: adminUserDetail
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: HTML page — user detail
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: User not found
+
+  /admin/users/{id}/status:
+    post:
+      tags: [Admin - Users]
+      summary: Update user status
+      description: Change user status (active, inactive, or banned).
+      operationId: adminUserUpdateStatus
+      security:
+        - adminSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive, banned]
+                  description: New user status
+      responses:
+        "302":
+          description: Redirect to user detail page
+
+# ============================================================
+# COMPONENTS
+# ============================================================
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Session-based authentication for public site users (requires login)
+    adminSessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Session-based authentication for admin users (requires admin role)
+
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Resource ID
+
+  schemas:
+    # ---- Auth Forms ----
+    LoginForm:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User password
+          example: password123
+
+    RegisterForm:
+      type: object
+      required: [full_name, email, password, password_confirm]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          description: Full name
+          example: Nguyễn Văn A
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Password (minimum 8 characters)
+        password_confirm:
+          type: string
+          format: password
+          description: Password confirmation (must match password)
+
+    # ---- Profile Forms ----
+    ProfileUpdateForm:
+      type: object
+      required: [full_name]
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          description: Full name
+          example: Nguyễn Văn A
+        phone:
+          type: string
+          maxLength: 20
+          description: Phone number
+          example: "0901234567"
+        avatar_url:
+          type: string
+          maxLength: 500
+          description: Avatar image URL
+
+    # ---- Bank Account Forms ----
+    BankAccountForm:
+      type: object
+      required: [bank_name, account_number, account_holder]
+      properties:
+        bank_name:
+          type: string
+          maxLength: 255
+          description: Bank name
+          example: Vietcombank
+        account_number:
+          type: string
+          maxLength: 50
+          description: Account number
+          example: "1234567890"
+        account_holder:
+          type: string
+          maxLength: 255
+          description: Account holder name
+          example: NGUYEN VAN A
+
+    # ---- Booking Forms ----
+    BookingCreateForm:
+      type: object
+      required: [schedule_id, num_participants]
+      properties:
+        schedule_id:
+          type: integer
+          description: Tour schedule ID
+        num_participants:
+          type: integer
+          minimum: 1
+          description: Number of participants
+        note:
+          type: string
+          description: Optional note for the booking
+
+    # ---- Rating Forms ----
+    RatingForm:
+      type: object
+      required: [score]
+      properties:
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Rating score (1-5)
+        comment:
+          type: string
+          description: Optional rating comment
+
+    # ---- Review Forms ----
+    ReviewForm:
+      type: object
+      required: [title, content, type]
+      properties:
+        title:
+          type: string
+          description: Review title
+        content:
+          type: string
+          description: Review content
+        type:
+          type: string
+          enum: [place, food, news]
+          description: Review type
+        images:
+          type: string
+          description: Image URLs (comma-separated or multi-value)
+
+    # ---- Category Forms ----
+    CategoryForm:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          description: Category name
+          example: Du lịch biển
+        description:
+          type: string
+          description: Category description
+        parent_id:
+          type: integer
+          description: Parent category ID (for subcategories)
+
+    # ---- Tour Forms ----
+    TourForm:
+      type: object
+      required: [title, price, duration_days, max_participants, status]
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          description: Tour title
+          example: Tour Đà Nẵng - Hội An 3N2Đ
+        description:
+          type: string
+          description: Tour description (HTML or plain text)
+        price:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+          description: Base price (VND)
+          example: 2500000
+        duration_days:
+          type: integer
+          minimum: 1
+          description: Tour duration in days
+          example: 3
+        location:
+          type: string
+          maxLength: 500
+          description: Tour location
+          example: Đà Nẵng - Hội An
+        max_participants:
+          type: integer
+          minimum: 1
+          description: Maximum number of participants
+          example: 30
+        status:
+          type: string
+          enum: [draft, active, inactive]
+          description: Tour status
+        category_ids:
+          type: array
+          items:
+            type: integer
+          description: Category IDs
+        image_urls:
+          type: array
+          items:
+            type: string
+          description: Image URLs for the tour
+
+    # ---- Schedule Forms ----
+    ScheduleForm:
+      type: object
+      required: [departure_date, return_date, available_slots, status]
+      properties:
+        departure_date:
+          type: string
+          format: date
+          description: Departure date (YYYY-MM-DD)
+          example: "2025-07-01"
+        return_date:
+          type: string
+          format: date
+          description: Return date (YYYY-MM-DD)
+          example: "2025-07-03"
+        available_slots:
+          type: integer
+          minimum: 1
+          description: Number of available slots
+          example: 30
+        price_override:
+          type: number
+          format: float
+          description: Override price for this schedule (optional)
+        status:
+          type: string
+          enum: [open, full, cancelled]
+          description: Schedule status
+
+    # ---- Data Models ----
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        avatar_url:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+        status:
+          type: string
+          enum: [active, inactive, banned]
+        email_verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Tour:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        duration_days:
+          type: integer
+        location:
+          type: string
+        max_participants:
+          type: integer
+        images:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [draft, active, inactive]
+        avg_rating:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        parent_id:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TourSchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+        tour_id:
+          type: integer
+        departure_date:
+          type: string
+          format: date-time
+        return_date:
+          type: string
+          format: date-time
+        available_slots:
+          type: integer
+        price_override:
+          type: number
+          format: float
+          nullable: true
+        status:
+          type: string
+          enum: [open, full, cancelled]
+        created_at:
+          type: string
+          format: date-time
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        tour_id:
+          type: integer
+        schedule_id:
+          type: integer
+        num_participants:
+          type: integer
+        total_price:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        booking_id:
+          type: integer
+        bank_account_id:
+          type: integer
+          nullable: true
+        amount:
+          type: number
+          format: float
+        payment_method:
+          type: string
+        transaction_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, success, failed, refunded]
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    BankAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        bank_name:
+          type: string
+        account_number:
+          type: string
+        account_holder:
+          type: string
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Rating:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        tour_id:
+          type: integer
+        score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        type:
+          type: string
+          enum: [place, food, news]
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        like_count:
+          type: integer
+        images:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        review_id:
+          type: integer
+        parent_id:
+          type: integer
+          nullable: true
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SocialAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        provider:
+          type: string
+          enum: [google, facebook, twitter]
+        provider_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ReviewLike:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        review_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
