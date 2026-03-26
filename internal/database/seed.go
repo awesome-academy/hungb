@@ -85,14 +85,28 @@ func seedCategories(db *gorm.DB) error {
 	}
 
 	for _, cat := range categories {
-		result := db.Where("slug = ?", cat.Slug).FirstOrCreate(&cat)
-		if result.Error != nil {
-			slog.Error("failed to seed category", "slug", cat.Slug, "error", result.Error)
-			return result.Error
+		var existing models.Category
+		err := db.Unscoped().Where("slug = ?", cat.Slug).First(&existing).Error
+		if err == nil {
+			if existing.DeletedAt.Valid {
+				db.Unscoped().Model(&existing).Updates(map[string]interface{}{
+					"deleted_at":  nil,
+					"name":        cat.Name,
+					"description": cat.Description,
+				})
+				slog.Info("category restored", "name", cat.Name)
+			}
+			continue
 		}
-		if result.RowsAffected > 0 {
-			slog.Info("category created", "name", cat.Name)
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			slog.Error("failed to check category", "slug", cat.Slug, "error", err)
+			return err
 		}
+		if err := db.Create(&cat).Error; err != nil {
+			slog.Error("failed to seed category", "slug", cat.Slug, "error", err)
+			return err
+		}
+		slog.Info("category created", "name", cat.Name)
 	}
 
 	return nil
