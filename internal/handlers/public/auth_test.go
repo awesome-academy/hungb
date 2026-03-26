@@ -311,8 +311,8 @@ func TestVerifyEmail_Success(t *testing.T) {
 
 	w := testutil.MakeGetRequest(r, "/verify-email?token=valid-verify-token")
 
-	assert.Equal(t, http.StatusFound, w.Code)
-	assert.Equal(t, constants.RouteHome, w.Header().Get("Location"))
+	// On success, the handler renders verify_result.html with HTTP 200.
+	assert.Equal(t, http.StatusOK, w.Code)
 	userRepo.AssertExpectations(t)
 }
 
@@ -346,10 +346,10 @@ func TestVerifyEmail_EmptyToken(t *testing.T) {
 
 func TestLogout_Redirects(t *testing.T) {
 	handler, _ := newPublicAuthHandler()
-	r := testutil.SetupTestRouter()
-	r.GET("/logout", handler.Logout)
+	r := testutil.SetupTestRouterNoCSRF()
+	r.POST("/logout", handler.Logout)
 
-	w := testutil.MakeGetRequest(r, "/logout")
+	w := testutil.MakePostFormRequest(r, "/logout", url.Values{})
 
 	assert.Equal(t, http.StatusFound, w.Code)
 	assert.Equal(t, constants.RouteHome, w.Header().Get("Location"))

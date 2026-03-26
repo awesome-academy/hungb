@@ -267,7 +267,7 @@ func TestLoadUser_InactiveUser_ClearsSession(t *testing.T) {
 		Email:    "inactive@example.com",
 		FullName: "Inactive",
 		Role:     constants.RoleUser,
-		Status:   constants.StatusBanned,
+		Status:   constants.StatusInactive,
 	}
 	require.NoError(t, db.Create(user).Error)
 

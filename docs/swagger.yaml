@@ -125,8 +125,8 @@ paths:
               $ref: "#/components/schemas/RegisterForm"
       responses:
         "302":
-          description: Redirect to homepage on success, or back to form on error
-        "200":
+          description: Redirect to homepage on success
+        "422":
           description: HTML page — re-rendered form with validation errors
 
   /login:
@@ -153,8 +153,8 @@ paths:
               $ref: "#/components/schemas/LoginForm"
       responses:
         "302":
-          description: Redirect to homepage on success
-        "200":
+          description: Redirect to homepage (or admin dashboard for admin users) on success
+        "422":
           description: HTML page — re-rendered form with error message
 
   /logout:
@@ -181,13 +181,17 @@ paths:
           description: Email verification token
       responses:
         "200":
-          description: HTML page — verification result (success or failure)
+          description: HTML page — verification success
           content:
             text/html:
               schema:
                 type: string
-        "302":
-          description: Redirect on error
+        "400":
+          description: HTML page — invalid or expired verification token
+          content:
+            text/html:
+              schema:
+                type: string
 
   # ============================================================
   # PUBLIC SITE — OAUTH
@@ -1586,12 +1590,12 @@ components:
     sessionAuth:
       type: apiKey
       in: cookie
-      name: session
+      name: sun_session
       description: Session-based authentication for public site users (requires login)
     adminSessionAuth:
       type: apiKey
       in: cookie
-      name: session
+      name: sun_session
       description: Session-based authentication for admin users (requires admin role)
 
   parameters:

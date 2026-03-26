@@ -148,10 +148,10 @@ func TestAdminLogin_RedirectsIfAlreadyLoggedIn(t *testing.T) {
 
 func TestAdminLogout_Redirects(t *testing.T) {
 	handler, _ := newAdminAuthHandler()
-	r := testutil.SetupTestRouter()
-	r.GET("/admin/logout", handler.Logout)
+	r := testutil.SetupTestRouterNoCSRF()
+	r.POST("/admin/logout", handler.Logout)
 
-	w := testutil.MakeGetRequest(r, "/admin/logout")
+	w := testutil.MakePostFormRequest(r, "/admin/logout", url.Values{})
 
 	assert.Equal(t, http.StatusFound, w.Code)
 	assert.Equal(t, constants.RouteAdminLogin, w.Header().Get("Location"))
