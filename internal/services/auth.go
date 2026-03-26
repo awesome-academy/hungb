@@ -257,38 +257,25 @@ func (s *AuthService) Register(ctx context.Context, form *RegisterForm) (*models
 		VerifyTokenExpiry: tokenExpiry,
 	}
 
-	txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		txUserRepo := repository.NewUserRepository(tx)
-
-		if err := txUserRepo.Create(ctx, user); err != nil {
-			if appErrors.IsDuplicateEntryError(err) {
-				return appErrors.ErrEmailAlreadyTaken
-			}
-			slog.ErrorContext(ctx, messages.LogRegisterCreateUser, "error", err)
-			return appErrors.ErrInternalServerError
-		}
-
-		if verifyToken != "" {
-			verifyPath, err := url.JoinPath(s.baseURL, constants.RouteVerifyEmail)
-			if err != nil {
-				slog.ErrorContext(ctx, "register: build verify URL", "error", err)
-				return appErrors.ErrInternalServerError
-			}
-			verifyURL := verifyPath + "?token=" + url.QueryEscape(verifyToken)
-			if err := s.emailService.SendVerificationEmail(user.Email, user.FullName, verifyURL); err != nil {
-				slog.ErrorContext(ctx, messages.LogRegisterSendEmail, "email", user.Email, "error", err)
-				return fmt.Errorf("send verification email: %w", err)
-			}
-		}
-
-		return nil
-	})
-
-	if txErr != nil {
-		if appErrors.Is(txErr, appErrors.ErrEmailAlreadyTaken) {
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		if appErrors.IsDuplicateEntryError(err) {
 			return nil, appErrors.ErrEmailAlreadyTaken
 		}
+		slog.ErrorContext(ctx, messages.LogRegisterCreateUser, "error", err)
 		return nil, appErrors.ErrInternalServerError
+	}
+
+	if verifyToken != "" {
+		verifyPath, err := url.JoinPath(s.baseURL, constants.RouteVerifyEmail)
+		if err != nil {
+			slog.ErrorContext(ctx, "register: build verify URL", "error", err)
+			return nil, appErrors.ErrInternalServerError
+		}
+		verifyURL := verifyPath + "?token=" + url.QueryEscape(verifyToken)
+		if err := s.emailService.SendVerificationEmail(user.Email, user.FullName, verifyURL); err != nil {
+			slog.ErrorContext(ctx, messages.LogRegisterSendEmail, "email", user.Email, "error", err)
+			return nil, fmt.Errorf("send verification email: %w", err)
+		}
 	}
 
 	return user, nil
